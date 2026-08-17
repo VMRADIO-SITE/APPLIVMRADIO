@@ -1539,22 +1539,27 @@ body{padding-top:36px!important}
  #vmSharedDedicationBar .vmDedText{font-size:11px;line-height:38px}
 }
 </style>
-<style id="vm-popup-desktop-title-position">
-@media (min-width: 769px){
-  #vmWelcomeSplash .vmWelcomeCard{
-    justify-content:center!important;
-  }
-  #vmWelcomeSplash .vmWelcomeTitle{
-    margin-top:clamp(80px,10vh,140px)!important;
-  }
+<style id="vm-popup-logo-above-title">
+#vmWelcomeSplash .vmWelcomeCard{
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  text-align:center!important;
+}
+#vmWelcomeSplash .vmWelcomeLogo{
+  transform:none!important;
+  margin:0 0 28px!important;
+}
+#vmWelcomeSplash .vmWelcomeTitle{
+  margin:0!important;
 }
 </style>
 </head>
 <body>
-<div id="vmWelcomeSplash" aria-label="Bienvenue sur l’appli VM RADIO">
+<div id="vmWelcomeSplash" aria-label="Bienvenue sur l’appli">
   <div class="vmWelcomeCard">
     <img class="vmWelcomeLogo" src="./VM-RADIO-POPUP-LOGO.jpeg" alt="VM RADIO">
-    <div class="vmWelcomeTitle">Bienvenue sur l’appli VM RADIO</div>
+    <div class="vmWelcomeTitle">Bienvenue sur l’appli</div>
   </div>
 </div>
 
