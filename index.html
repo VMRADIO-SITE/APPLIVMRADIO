@@ -1681,7 +1681,7 @@ function titleFirstUpper(v){
 </section>
 
 <section class="section">
-      <div class="section-head"><h2>VM Radio dans ta poche</h2><a href="./index.html">Site complet</a></div>
+      <div class="section-head"><h2>VM Radio dans ta poche</h2><a href="https://vmradio.fr/" target="_blank" rel="noopener noreferrer">Site complet</a></div>
       <div class="tiles">
         <a class="tile" href="./dedicaces.html"><em>♡</em><span><b>Dédicaces</b><small>Envoie ton message</small></span></a>
         <a class="tile" href="./infos.html"><em>◉</em><span><b>Infos</b><small>Découvre VM Radio</small></span></a>
@@ -2094,16 +2094,31 @@ if(document.readyState==="loading"){
 
 <script id="vm-welcome-splash-script">
 (function(){
-  function run(){
+  function showOncePerPageLoad(){
     var s=document.getElementById("vmWelcomeSplash");
     if(!s)return;
+
+    // This flag lives only in this browser document.
+    // A normal refresh/new arrival creates a new document => popup shows again.
+    // Internal navigation in the app keeps the same document => popup never returns.
+    if(window.__VM_WELCOME_ALREADY_SHOWN){
+      if(s.parentNode)s.parentNode.removeChild(s);
+      return;
+    }
+    window.__VM_WELCOME_ALREADY_SHOWN=true;
+
     setTimeout(function(){
       s.classList.add("vmWelcomeHide");
-      setTimeout(function(){if(s&&s.parentNode)s.parentNode.removeChild(s);},650);
+      setTimeout(function(){
+        if(s&&s.parentNode)s.parentNode.removeChild(s);
+      },650);
     },3000);
   }
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",run,{once:true});
-  else run();
+
+  if(document.readyState==="loading")
+    document.addEventListener("DOMContentLoaded",showOncePerPageLoad,{once:true});
+  else
+    showOncePerPageLoad();
 })();
 </script>
 <script id="vm-radio-dedications-unified">
