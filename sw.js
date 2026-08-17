@@ -1,4 +1,4 @@
-const CACHE_NAME = "vm-radio-app-v2";
+const CACHE_NAME = "vm-radio-app-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -44,7 +44,6 @@ self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Never cache the live radio stream.
   if (
     url.pathname.includes("/radio") ||
     url.pathname.includes("stream") ||
