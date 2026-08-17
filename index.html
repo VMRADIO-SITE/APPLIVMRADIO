@@ -1792,8 +1792,11 @@ function titleFirstUpper(v){
     const cover=$("cover")?.src||"";
     try{
       navigator.mediaSession.metadata=new MediaMetadata({
-        title, artist, album:"VM RADIO",
-        artwork: cover ? [{src:cover,sizes:"512x512",type:"image/jpeg"}] : []
+        title, artist, album:"VM RADIO • EN DIRECT",
+        artwork: cover ? [
+          {src:cover,sizes:"512x512",type:"image/jpeg"},
+          {src:cover,sizes:"256x256",type:"image/jpeg"}
+        ] : []
       });
       navigator.mediaSession.playbackState=audio.paused?"paused":"playing";
     }catch(e){}
@@ -2361,6 +2364,49 @@ window.addEventListener("resize",function(){
     document.addEventListener("DOMContentLoaded",bind,{once:true});
   else
     bind();
+})();
+</script>
+<script id="vm-radio-background-media-session">
+(function(){
+"use strict";
+const audio=document.getElementById("audio");
+if(!audio || !("mediaSession" in navigator)) return;
+
+function syncNowPlaying(){
+  const title=(document.getElementById("title")?.textContent||"VM RADIO").trim();
+  const artist=(document.getElementById("artist")?.textContent||"Music IA By Valentin").trim();
+  const cover=document.getElementById("cover")?.src||"";
+  try{
+    navigator.mediaSession.metadata=new MediaMetadata({
+      title:title || "VM RADIO",
+      artist:artist || "VM RADIO",
+      album:"VM RADIO • EN DIRECT",
+      artwork:cover ? [
+        {src:cover,sizes:"512x512",type:"image/jpeg"},
+        {src:cover,sizes:"256x256",type:"image/jpeg"}
+      ] : []
+    });
+    navigator.mediaSession.playbackState=audio.paused?"paused":"playing";
+  }catch(e){}
+}
+
+try{navigator.mediaSession.setActionHandler("play",()=>audio.play().catch(()=>{}));}catch(e){}
+try{navigator.mediaSession.setActionHandler("pause",()=>audio.pause());}catch(e){}
+try{navigator.mediaSession.setActionHandler("stop",()=>audio.pause());}catch(e){}
+
+audio.addEventListener("play",syncNowPlaying);
+audio.addEventListener("pause",syncNowPlaying);
+audio.addEventListener("loadedmetadata",syncNowPlaying);
+audio.addEventListener("emptied",syncNowPlaying);
+
+const titleEl=document.getElementById("title");
+const artistEl=document.getElementById("artist");
+const coverEl=document.getElementById("cover");
+if(titleEl)new MutationObserver(syncNowPlaying).observe(titleEl,{childList:true,subtree:true,characterData:true});
+if(artistEl)new MutationObserver(syncNowPlaying).observe(artistEl,{childList:true,subtree:true,characterData:true});
+if(coverEl)new MutationObserver(syncNowPlaying).observe(coverEl,{attributes:true,attributeFilter:["src"]});
+
+syncNowPlaying();
 })();
 </script>
 </body>
