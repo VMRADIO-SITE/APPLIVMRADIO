@@ -6,15 +6,15 @@
   "display": "standalone",
   "icons": [
     {
-      "src": "./vmradio-app-icon-192.png",
+      "src": "./vmradio-app-icon-new.jpg?v=2",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any maskable"
     },
     {
-      "src": "./vmradio-app-icon-512.png",
+      "src": "./vmradio-app-icon-new.jpg?v=2",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any maskable"
     }
   ]
