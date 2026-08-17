@@ -1779,12 +1779,7 @@ html body nav.nav a.active i{
  display:block;flex:none;color:#fff;font-size:12px;line-height:36px;
  white-space:nowrap;padding:0 28px 0 0;margin:0;
 }
-#vmSharedDedicationBar .vmDedTrack.running{
- animation:vmDedicationLeft var(--vm-ded-duration,25s) linear infinite!important;
-}
-@keyframes vmDedicationLeft{
- from{transform:translateX(0)}
- to{transform:translateX(calc(-1 * var(--vm-ded-distance, 0px)))}
+to{transform:translateX(calc(-1 * var(--vm-ded-distance, 0px)))}
 }
 body{padding-top:36px!important}
 @media(max-width:520px){
@@ -1794,49 +1789,65 @@ body{padding-top:36px!important}
  #vmSharedDedicationBar .vmDedText{font-size:11px;line-height:38px}
 }
 </style>
-<style id="vm-dedication-spacing-only">
-#vmSharedDedicationBar .vmDedText{
-  padding-right:110px!important;
+<style id="vm-dedications-single-system-css">
+#vmSharedDedicationBar{
+  height:58px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  justify-content:flex-start!important;
+  overflow:hidden!important;
 }
-</style>
-<style id="vm-dedication-item-spacing">
-#vmSharedDedicationBar .vmDedTrack{
+#vmSharedDedicationBar .vmDedLabel{
+  flex:0 0 22px!important;
+  width:100%!important;
+  height:22px!important;
+  min-height:22px!important;
   display:flex!important;
   align-items:center!important;
-}
-#vmSharedDedicationBar .vmDedItem{
-  display:inline-block!important;
-  flex:0 0 auto!important;
-  white-space:nowrap!important;
-  margin-right:120px!important;
+  justify-content:center!important;
   padding:0!important;
+  box-sizing:border-box!important;
+  border-right:0!important;
+  border-bottom:1px solid rgba(190,105,255,.28)!important;
+  font-size:10px!important;
+  z-index:5!important;
+}
+#vmSharedDedicationBar .vmDedWindow{
+  position:relative!important;
+  flex:1 1 auto!important;
+  width:100%!important;
+  min-width:0!important;
+  height:36px!important;
+  overflow:hidden!important;
+}
+#vmSharedDedicationBar .vmDedTrack{
+  position:absolute!important;
+  left:0!important;
+  top:0!important;
+  height:36px!important;
+  display:flex!important;
+  align-items:center!important;
+  width:max-content!important;
+  max-width:none!important;
+  white-space:nowrap!important;
+  transform:translate3d(0,0,0);
+  animation:none!important;
+  will-change:transform!important;
 }
 #vmSharedDedicationBar .vmDedText{
-  padding-right:0!important;
+  display:block!important;
+  flex:0 0 auto!important;
+  white-space:nowrap!important;
+  padding:0 58px 0 0!important;
+  margin:0!important;
+  line-height:36px!important;
+  font-size:12px!important;
 }
-</style>
-<style id="vm-dedication-item-spacing-compact">
-#vmSharedDedicationBar .vmDedItem{
-  margin-right:60px!important;
-}
-@media(max-width:768px){
-  #vmSharedDedicationBar .vmDedItem{
-    margin-right:80px!important;
-  }
-}
-</style>
-<style id="vm-dedication-mobile-full-scroll">
-@media (max-width:768px){
-  #vmSharedDedicationBar .vmDedWindow{
-    overflow:hidden!important;
-  }
-  #vmSharedDedicationBar .vmDedTrack{
-    width:max-content!important;
-    max-width:none!important;
-  }
-  #vmSharedDedicationBar .vmDedText{
-    white-space:nowrap!important;
-  }
+@media(max-width:520px){
+  #vmSharedDedicationBar{height:58px!important}
+  #vmSharedDedicationBar .vmDedLabel{font-size:10px!important}
+  #vmSharedDedicationBar .vmDedText{font-size:11px!important;line-height:36px!important}
 }
 </style>
 </head><body>
@@ -1903,16 +1914,10 @@ function ensure(){
  document.body.insertBefore(b,document.body.firstChild);return b;
 }
 function sizeAndRun(track){
- const win=track.parentElement;
  const items=track.querySelectorAll(".vmDedText");
- if(!win||items.length<2)return;
- const one=items[0].getBoundingClientRect().width;
- const distance=Math.max(0,one);
- track.style.setProperty("--vm-ded-distance",distance+"px");
- track.style.setProperty("--vm-ded-duration",Math.max(18,Math.min(40,distance/22))+"s");
- track.classList.remove("running");void track.offsetWidth;
- if(one>win.clientWidth) track.classList.add("running");
- else track.classList.remove("running");
+ if(!items.length)return;
+ track.classList.remove("running");
+ track.style.animation="none";
 }
 function renderBanner(r,force){
  const b=ensure(),track=b.querySelector(".vmDedTrack");if(!track)return;
@@ -1966,56 +1971,6 @@ function start(){
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
 })();
 </script>
-<script id="vm-radio-banner-persistent">
-(function(){
-"use strict";
-const VM_BANNER_STATE="vmradio_dedication_banner_state_v1";
-function getState(){try{return JSON.parse(sessionStorage.getItem(VM_BANNER_STATE)||"{}")}catch(e){return {}}}
-function setState(s){try{sessionStorage.setItem(VM_BANNER_STATE,JSON.stringify(s))}catch(e){}}
-
-function preservePosition(){
-  const track=document.querySelector("#vmSharedDedicationBar .vmDedTrack");
-  if(!track || !track.classList.contains("running")) return;
-  const st=getState();
-  if(!st.startedAt) st.startedAt=Date.now();
-  st.startedAt=Number(st.startedAt);
-  setState(st);
-}
-
-function restorePosition(){
-  const track=document.querySelector("#vmSharedDedicationBar .vmDedTrack");
-  if(!track) return;
-  const st=getState();
-  if(!st.startedAt) {
-    st.startedAt=Date.now();
-    setState(st);
-    return;
-  }
-  const duration=parseFloat(getComputedStyle(track).getPropertyValue("--vm-ded-duration"))||25;
-  const elapsed=(Date.now()-Number(st.startedAt))/1000;
-  const cycle=elapsed%duration;
-  track.style.animationDelay=(-cycle)+"s";
-}
-
-function addSpacing(){
-  const track=document.querySelector("#vmSharedDedicationBar .vmDedTrack");
-  if(!track)return;
-  track.querySelectorAll(".vmDedText").forEach(el=>{
-    el.style.paddingRight="110px";
-  });
-}
-
-function wait(){
-  const bar=document.getElementById("vmSharedDedicationBar");
-  if(!bar){setTimeout(wait,50);return;}
-  addSpacing();
-  setTimeout(restorePosition,100);
-  window.addEventListener("pagehide",preservePosition);
-}
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",wait,{once:true});
-else wait();
-})();
-</script>
 <script id="vm-top-titles-uppercase">
 (function(){
   function up(v){v=String(v==null?"":v).trim();return v?v.charAt(0).toLocaleUpperCase("fr-FR")+v.slice(1):"";}
@@ -2040,40 +1995,84 @@ else wait();
   setInterval(fix,1000);
 })();
 </script>
-<script id="vm-dedication-mobile-full-scroll-js">
+<script id="vm-dedications-single-system-js">
 (function(){
-  function adjustMobileTicker(){
-    if(window.innerWidth>768)return;
-    const bar=document.getElementById("vmSharedDedicationBar");
-    const track=bar&&bar.querySelector(".vmDedTrack");
-    const win=bar&&bar.querySelector(".vmDedWindow");
-    if(!track||!win)return;
-    const items=track.querySelectorAll(".vmDedText");
-    if(!items.length)return;
+"use strict";
+let raf=0,last=0,x=0,running=false,speed=42,lastText="";
 
-    // The two duplicated text spans form one complete cycle.
-    const cycleWidth=items[0].getBoundingClientRect().width;
-    if(!cycleWidth)return;
+function getParts(){
+  const bar=document.getElementById("vmSharedDedicationBar");
+  if(!bar)return null;
+  const win=bar.querySelector(".vmDedWindow");
+  const track=bar.querySelector(".vmDedTrack");
+  if(!win||!track)return null;
+  return {win,track};
+}
 
-    const distance=Math.max(0,cycleWidth);
-    // Slow enough for long dedications to be read completely.
-    const duration=Math.max(24, Math.min(90, distance/15));
-    track.style.setProperty("--vm-ded-distance",distance+"px");
-    track.style.setProperty("--vm-ded-duration",duration+"s");
-    track.style.animationDuration=duration+"s";
+function ensureCopies(){
+  const p=getParts();
+  if(!p)return false;
+  const nodes=p.track.querySelectorAll(".vmDedText");
+  if(nodes.length<2)return false;
+
+  // The existing Firebase system fills both copies. Do not change their data.
+  // Just make sure the track is under this one JS controller.
+  p.track.style.animation="none";
+  p.track.classList.remove("running");
+  return true;
+}
+
+function loop(now){
+  const p=getParts();
+  if(!p){
+    running=false; raf=0;
+    setTimeout(start,150);
+    return;
   }
 
-  function run(){
-    adjustMobileTicker();
-    setTimeout(adjustMobileTicker,300);
-    setTimeout(adjustMobileTicker,1000);
+  const dt=Math.min(0.05,(now-last)/1000);
+  last=now;
+  x-=speed*dt;
+
+  const first=p.track.firstElementChild;
+  const second=p.track.children[1];
+
+  if(first && second){
+    const width=first.getBoundingClientRect().width + 58;
+    if(width>58 && -x>=width){
+      x+=width;
+      p.track.appendChild(first);
+    }
   }
 
-  if(document.readyState==="loading"){
-    document.addEventListener("DOMContentLoaded",run,{once:true});
-  }else run();
+  p.track.style.transform="translate3d("+x+"px,0,0)";
+  raf=requestAnimationFrame(loop);
+}
 
-  window.addEventListener("resize",adjustMobileTicker);
+function start(){
+  if(!ensureCopies())return setTimeout(start,100);
+  if(!running){
+    running=true;
+    last=performance.now();
+    raf=requestAnimationFrame(loop);
+  }
+}
+
+function boot(){
+  start();
+  setTimeout(start,300);
+  setTimeout(start,1000);
+}
+
+if(document.readyState==="loading"){
+  document.addEventListener("DOMContentLoaded",boot,{once:true});
+}else{
+  boot();
+}
+
+window.addEventListener("resize",function(){
+  ensureCopies();
+});
 })();
 </script>
 </body></html>
