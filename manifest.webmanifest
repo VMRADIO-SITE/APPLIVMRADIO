@@ -4,15 +4,11 @@
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
+  "theme_color": "#090610",
+  "background_color": "#090610",
   "icons": [
     {
-      "src": "./vmradio-app-icon-new.jpg?v=2",
-      "sizes": "192x192",
-      "type": "image/jpeg",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "./vmradio-app-icon-new.jpg?v=2",
+      "src": "./VM-RADIO-POPUP-LOGO.jpeg?v=3",
       "sizes": "512x512",
       "type": "image/jpeg",
       "purpose": "any maskable"
