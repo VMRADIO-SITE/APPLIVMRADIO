@@ -1966,56 +1966,6 @@ function start(){
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start,{once:true});else start();
 })();
 </script>
-<script id="vm-radio-banner-persistent">
-(function(){
-"use strict";
-const VM_BANNER_STATE="vmradio_dedication_banner_state_v1";
-function getState(){try{return JSON.parse(sessionStorage.getItem(VM_BANNER_STATE)||"{}")}catch(e){return {}}}
-function setState(s){try{sessionStorage.setItem(VM_BANNER_STATE,JSON.stringify(s))}catch(e){}}
-
-function preservePosition(){
-  const track=document.querySelector("#vmSharedDedicationBar .vmDedTrack");
-  if(!track || !track.classList.contains("running")) return;
-  const st=getState();
-  if(!st.startedAt) st.startedAt=Date.now();
-  st.startedAt=Number(st.startedAt);
-  setState(st);
-}
-
-function restorePosition(){
-  const track=document.querySelector("#vmSharedDedicationBar .vmDedTrack");
-  if(!track) return;
-  const st=getState();
-  if(!st.startedAt) {
-    st.startedAt=Date.now();
-    setState(st);
-    return;
-  }
-  const duration=parseFloat(getComputedStyle(track).getPropertyValue("--vm-ded-duration"))||25;
-  const elapsed=(Date.now()-Number(st.startedAt))/1000;
-  const cycle=elapsed%duration;
-  track.style.animationDelay=(-cycle)+"s";
-}
-
-function addSpacing(){
-  const track=document.querySelector("#vmSharedDedicationBar .vmDedTrack");
-  if(!track)return;
-  track.querySelectorAll(".vmDedText").forEach(el=>{
-    el.style.paddingRight="110px";
-  });
-}
-
-function wait(){
-  const bar=document.getElementById("vmSharedDedicationBar");
-  if(!bar){setTimeout(wait,50);return;}
-  addSpacing();
-  setTimeout(restorePosition,100);
-  window.addEventListener("pagehide",preservePosition);
-}
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",wait,{once:true});
-else wait();
-})();
-</script>
 <script id="vm-top-titles-uppercase">
 (function(){
   function up(v){v=String(v==null?"":v).trim();return v?v.charAt(0).toLocaleUpperCase("fr-FR")+v.slice(1):"";}
@@ -2074,6 +2024,61 @@ else wait();
   }else run();
 
   window.addEventListener("resize",adjustMobileTicker);
+})();
+</script>
+<script id="vm-dedication-motion-only">
+(function(){
+"use strict";
+var raf=0,last=0,x=0,running=false,speed=42;
+
+function get(){
+ var b=document.getElementById("vmSharedDedicationBar");
+ if(!b)return null;
+ var w=b.querySelector(".vmDedWindow");
+ var t=b.querySelector(".vmDedTrack");
+ if(!w||!t)return null;
+ return {w:w,t:t};
+}
+function start(){
+ var p=get();
+ if(!p){setTimeout(start,100);return;}
+ var items=p.t.querySelectorAll(".vmDedText");
+ if(items.length<2){setTimeout(start,200);return;}
+
+ // Use the existing HTML/CSS exactly as supplied. Only the transform is
+ // controlled here; no dimensions, borders, colors or positions are set.
+ p.t.style.animation="none";
+ p.t.style.willChange="transform";
+
+ if(!running){
+   running=true;
+   last=performance.now();
+   raf=requestAnimationFrame(loop);
+ }
+}
+function loop(now){
+ var p=get();
+ if(!p){running=false;raf=0;return;}
+ var dt=Math.min(.05,(now-last)/1000);
+ last=now;
+ x-=speed*dt;
+
+ var first=p.t.firstElementChild;
+ var second=p.t.children[1];
+ if(!first||!second){raf=requestAnimationFrame(loop);return;}
+
+ var width=first.getBoundingClientRect().width;
+ if(width>0 && -x>=width){
+   x+=width;
+   p.t.appendChild(first);
+ }
+ p.t.style.transform="translate3d("+x+"px,0,0)";
+ raf=requestAnimationFrame(loop);
+}
+if(document.readyState==="loading")
+ document.addEventListener("DOMContentLoaded",start,{once:true});
+else start();
+window.addEventListener("resize",function(){start();});
 })();
 </script>
 </body></html>
