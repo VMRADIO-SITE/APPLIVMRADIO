@@ -2002,4 +2002,28 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 else wait();
 })();
 </script>
+<script id="vm-top-titles-uppercase">
+(function(){
+  function up(v){v=String(v==null?"":v).trim();return v?v.charAt(0).toLocaleUpperCase("fr-FR")+v.slice(1):"";}
+  function fix(){
+    document.querySelectorAll('.top-title,.top-titre,.top-titres .title,.top-titres .track-title,[data-top-title]').forEach(function(el){
+      if(el.textContent.trim()) el.textContent=up(el.textContent);
+    });
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",fix,{once:true});else fix();
+  setInterval(fix,1000);
+})();
+</script>
+<script id="vm-direct-title-uppercase">
+(function(){
+  function up(v){v=String(v==null?"":v).trim();return v?v.charAt(0).toLocaleUpperCase("fr-FR")+v.slice(1):"";}
+  function fix(){
+    document.querySelectorAll('[data-current-title],#currentTitle,.current-title,.live-title,.programme-current-title,.player-title').forEach(function(el){
+      if(el.textContent.trim()) el.textContent=up(el.textContent);
+    });
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",fix,{once:true});else fix();
+  setInterval(fix,1000);
+})();
+</script>
 </body></html>

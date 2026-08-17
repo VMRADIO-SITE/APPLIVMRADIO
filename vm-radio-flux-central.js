@@ -1,3 +1,4 @@
+function vm\1vmTopTitleUpper(\2)\3return s?s.charAt(0).toLocaleUpperCase("fr-FR")+s.slice(1):"";}
 /* VM RADIO — synchronisation unique du flux */
 (function(){
 "use strict";
@@ -37,6 +38,10 @@ function clock(v){
  const d=new Date(v);
  return Number.isNaN(d.getTime())?"--:--":d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
 }
+function titleCaseFirst(v){
+ const s=String(v??"").trim();
+ return s ? s.charAt(0).toLocaleUpperCase("fr-FR")+s.slice(1) : "";
+}
 function setText(selectors,v){
  document.querySelectorAll(selectors).forEach(e=>{e.textContent=String(v??"")});
 }
@@ -51,27 +56,27 @@ function render(c,n,h){
  if(!c)return;
 
  // PAGE D'ACCUEIL — EN DIRECT
- setText("[data-current-title],#currentTitle,.current-title",c.title);
+ setText("[data-current-title],#currentTitle,.current-title",titleCaseFirst(c.title));
  setText("[data-current-artist],#currentArtist,.current-artist",c.artist);
  setText("[data-current-time],#broadcastTime,.current-time",clock(c.time));
  setImg("[data-current-cover],#currentCover,.current-cover,.cover-wrap img",c.cover);
 
  // PAGE D'ACCUEIL / PLAYER — À SUIVRE
  if(n){
-  setText("[data-next-title],#nextTitle,.next-title",n.title);
+  setText("[data-next-title],#nextTitle,.next-title",titleCaseFirst(n.title));
   setText("[data-next-artist],#nextArtist,.next-artist",n.artist);
   setText("[data-next-time],#nextTime,.next-time",clock(n.time));
   setImg("[data-next-cover],#nextCover,.next-cover,.next-card img",n.cover);
  }
 
  // À LA UNE — 3 destinations séparées
- setText("[data-news-current]",c.title);
+ setText("[data-news-current]",titleCaseFirst(c.title));
  setText("[data-news-current-artist]",c.artist);
  setText("[data-news-current-time]",clock(c.time));
  setImg("[data-news-current-cover]",c.cover);
 
  if(n){
-  setText("[data-news-next]",n.title);
+  setText("[data-news-next]",titleCaseFirst(n.title));
   setText("[data-news-next-artist]",n.artist);
   setText("[data-news-next-time]",clock(n.time));
   setImg("[data-news-next-cover]",n.cover);
@@ -97,7 +102,7 @@ function render(c,n,h){
    const im=row.querySelector("img");
    im.src=x.cover||FALLBACK;
    im.onerror=()=>{im.onerror=null;im.src=FALLBACK};
-   row.querySelector(".previous-title").textContent=x.title;
+   row.querySelector(".previous-title").textContent=titleCaseFirst(x.title);
    row.querySelector(".previous-artist").textContent=x.artist||DEFAULT_ARTIST;
    row.querySelector(".previous-time").textContent=x.time ? "Diffusé à " + clock(x.time) : "";
    box.appendChild(row);
