@@ -2293,6 +2293,50 @@ window.addEventListener("resize",function(){
 });
 })();
 </script>
+<script id="vm-popup-return-home-top">
+(function(){
+  function resetHomeScroll(){
+    if(location.pathname.endsWith("/") || location.pathname.endsWith("/index.html") || location.pathname==="/"){
+      window.scrollTo({top:0,left:0,behavior:"auto"});
+      document.documentElement.scrollTop=0;
+      document.body.scrollTop=0;
+    }
+  }
+
+  function bind(){
+    const popup=document.getElementById("vmWelcomeSplash");
+    if(!popup || popup.dataset.vmTopBound)return;
+    popup.dataset.vmTopBound="1";
+
+    const closeButtons=popup.querySelectorAll(
+      "[data-close], .vmWelcomeClose, #vmWelcomeClose, button"
+    );
+
+    closeButtons.forEach(btn=>{
+      btn.addEventListener("click",function(){
+        setTimeout(resetHomeScroll,30);
+        setTimeout(resetHomeScroll,150);
+      });
+    });
+
+    // Also catches popup closing through existing JS/state changes.
+    const observer=new MutationObserver(function(){
+      const hidden =
+        popup.hidden ||
+        popup.style.display==="none" ||
+        popup.classList.contains("hidden") ||
+        getComputedStyle(popup).display==="none";
+      if(hidden) resetHomeScroll();
+    });
+    observer.observe(popup,{attributes:true,attributeFilter:["style","class","hidden"]});
+  }
+
+  if(document.readyState==="loading")
+    document.addEventListener("DOMContentLoaded",bind,{once:true});
+  else
+    bind();
+})();
+</script>
 </body>
 </body>
 </html>
