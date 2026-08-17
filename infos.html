@@ -1912,4 +1912,54 @@ window.addEventListener("resize",function(){
 });
 })();
 </script>
+<script id="vm-radio-auto-update">
+(function(){
+"use strict";
+
+if(!("serviceWorker" in navigator)) return;
+
+let reloading = false;
+
+function reloadOnce(){
+  if(reloading) return;
+  reloading = true;
+  // Let the new service worker take control, then refresh the current page.
+  setTimeout(function(){ window.location.reload(); }, 250);
+}
+
+navigator.serviceWorker.addEventListener("controllerchange", reloadOnce);
+
+window.addEventListener("load", function(){
+  navigator.serviceWorker.register("./sw.js")
+    .then(function(reg){
+      // Check for a new deployed version regularly while the app is open.
+      reg.update().catch(function(){});
+      setInterval(function(){
+        reg.update().catch(function(){});
+      }, 60000);
+
+      // If an update is already waiting, activate it immediately.
+      if(reg.waiting){
+        reg.waiting.postMessage({type:"SKIP_WAITING"});
+      }
+
+      reg.addEventListener("updatefound", function(){
+        const worker = reg.installing;
+        if(!worker) return;
+
+        worker.addEventListener("statechange", function(){
+          if(worker.state === "installed" && navigator.serviceWorker.controller){
+            // New version downloaded: activate it now.
+            if(reg.waiting){
+              reg.waiting.postMessage({type:"SKIP_WAITING"});
+            }
+          }
+        });
+      });
+    })
+    .catch(function(){});
+});
+})();
+</script>
+
 </body></html>
