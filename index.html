@@ -1627,6 +1627,21 @@ function titleFirstUpper(v){
   margin-right:55px!important;
 }
 </style>
+
+<style id="vm-install-app-style">
+.vm-install-card{padding:18px;text-align:center}
+.vm-install-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;padding:12px 18px;background:#7d35b8;color:#fff;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.22)}
+.vm-install-button:disabled{opacity:.55;cursor:default}
+.vm-install-status{min-height:22px;margin:10px 0;color:#ddd;font-size:13px}
+.vm-install-help{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:left;margin-top:16px}
+.vm-install-help article{padding:14px;border-radius:12px;background:rgba(255,255,255,.045);border:1px solid rgba(190,105,255,.18)}
+.vm-install-help h3{margin:0 0 8px;font-size:15px}
+.vm-install-help p{margin:7px 0;font-size:12px;line-height:1.45;color:#ddd}
+@media(max-width:700px){.vm-install-help{grid-template-columns:1fr}.vm-install-button{width:100%}}
+</style>
+
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#170d20">
 </head>
 <body>
 <div id="vmWelcomeSplash" aria-label="Bienvenue sur l’appli">
@@ -1688,6 +1703,43 @@ function titleFirstUpper(v){
       </div>
     </section>
   
+
+<section class="section vm-install-section" id="telecharger">
+  <div class="section-head">
+    <h2>📱 Télécharger l’application</h2>
+  </div>
+
+  <div class="vm-install-card">
+    <p class="module-subtitle">Installe VM RADIO sur ton appareil pour la retrouver directement depuis ton écran d’accueil.</p>
+
+    <button class="vm-install-button" id="vmInstallButton" type="button">
+      ⬇️ Télécharger l’application
+    </button>
+
+    <div class="vm-install-status" id="vmInstallStatus" aria-live="polite"></div>
+
+    <div class="vm-install-help">
+      <article>
+        <h3>🤖 Android</h3>
+        <p><b>Chrome :</b> ouvre VM RADIO, puis appuie sur <b>Installer l’application</b> ou sur <b>Ajouter à l’écran d’accueil</b> dans le menu ⋮.</p>
+        <p>Si le bouton <b>Télécharger l’application</b> apparaît ci-dessus, appuie dessus puis confirme l’installation.</p>
+      </article>
+
+      <article>
+        <h3>🍎 iPhone / iPad</h3>
+        <p>Ouvre VM RADIO avec <b>Safari</b>, appuie sur le bouton <b>Partager</b> ⬆️, puis choisis <b>Sur l’écran d’accueil</b> et confirme avec <b>Ajouter</b>.</p>
+        <p>Sur iPhone, cette méthode est utilisée pour installer la version web de VM RADIO.</p>
+      </article>
+
+      <article>
+        <h3>🖥️ PC / Mac</h3>
+        <p>Avec <b>Chrome</b> ou <b>Edge</b>, ouvre VM RADIO puis utilise l’icône <b>Installer</b> dans la barre d’adresse, ou le menu du navigateur → <b>Installer VM RADIO</b>.</p>
+        <p>L’application s’ouvrira ensuite dans sa propre fenêtre.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
 <footer class="app-footer">
   <div class="app-footer-brand">VM RADIO</div>
   <div class="app-footer-powered">Appli propulsée par <strong>Music IA By Valentin</strong></div>
@@ -2409,6 +2461,63 @@ if(coverEl)new MutationObserver(syncNowPlaying).observe(coverEl,{attributes:true
 syncNowPlaying();
 })();
 </script>
+
+<script id="vm-pwa-install">
+(function(){
+  let deferredPrompt=null;
+  const btn=document.getElementById("vmInstallButton");
+  const status=document.getElementById("vmInstallStatus");
+
+  function setStatus(t){if(status)status.textContent=t||"";}
+
+  function isIOS(){
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
+  }
+
+  window.addEventListener("beforeinstallprompt",e=>{
+    e.preventDefault();
+    deferredPrompt=e;
+    if(btn){btn.disabled=false;btn.style.display="inline-flex";}
+    setStatus("L’installation est disponible sur cet appareil.");
+  });
+
+  window.addEventListener("appinstalled",()=>{
+    deferredPrompt=null;
+    if(btn){btn.disabled=true;btn.style.display="none";}
+    setStatus("VM RADIO est installée sur ton appareil. ❤️");
+  });
+
+  if(btn){
+    btn.addEventListener("click",async()=>{
+      if(deferredPrompt){
+        deferredPrompt.prompt();
+        const result=await deferredPrompt.userChoice;
+        deferredPrompt=null;
+        setStatus(result.outcome==="accepted" ? "Installation en cours…" : "Installation annulée.");
+        return;
+      }
+      if(isIOS()){
+        setStatus("Sur iPhone/iPad : Safari → Partager ⬆️ → Sur l’écran d’accueil → Ajouter.");
+      }else{
+        setStatus("Utilise le menu du navigateur puis « Installer VM RADIO » ou « Ajouter à l’écran d’accueil ».");
+      }
+    });
+  }
+
+  // Register only the local app shell service worker.
+  if("serviceWorker" in navigator){
+    window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+  }
+
+  // Native install button is hidden until the browser says installation is possible.
+  if(btn && !deferredPrompt){
+    btn.style.display="none";
+    if(isIOS()) setStatus("Pour iPhone/iPad, suis les étapes Safari indiquées ci-dessous.");
+  }
+})();
+</script>
+
 </body>
 </body>
 </html>
