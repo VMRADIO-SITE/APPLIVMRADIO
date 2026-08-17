@@ -21,7 +21,6 @@ h1 span{display:block;color:#d19aff;text-shadow:0 0 18px rgba(170,70,255,.8)}
 .status{min-height:22px;margin:12px 0 0;color:#dfc8ff;font-size:14px}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px}
 .card{background:rgba(255,255,255,.045);border:1px solid rgba(197,126,255,.3);border-radius:18px;padding:20px}
-.platform-logo{width:42px;height:42px;object-fit:contain;display:block;margin-bottom:10px}
 .card h2{margin:0 0 10px;font-size:20px}.card p{margin:7px 0;color:#ddd;line-height:1.5;font-size:14px}
 .step{font-size:13px;color:#d6b8f2;margin-top:12px}
 .continue{display:block;width:max-content;max-width:100%;margin:25px auto 0;text-decoration:none;color:#fff;background:#21102d;border:1px solid #a64cff;border-radius:13px;padding:12px 20px;font-weight:800}
@@ -29,13 +28,13 @@ h1 span{display:block;color:#d19aff;text-shadow:0 0 18px rgba(170,70,255,.8)}
 @media(max-width:720px){.grid{grid-template-columns:1fr}.hero{padding:22px 16px}.logo{width:125px;height:125px}}
 </style>
 <link rel="manifest" href="./manifest.webmanifest">
-</head>
+<link rel="icon" type="image/png" href="./favicon-64.png?v=6"><link rel="apple-touch-icon" href="./apple-touch-icon.png?v=6"></head>
 <body>
 <div class="wrap"><main class="page">
 <section class="hero">
-  <img class="logo" src="./vm-radio-home-logo.png" alt="VM RADIO">
+  <img class="logo" src="./vmradio-app-logo.jpg" alt="VM RADIO">
   <h1>Télécharger<span>l'application</span></h1>
-  <p class="subtitle">VM RADIO — votre radio, partout avec vous.</p><p class="note">L’icône de l’application utilise le logo officiel VM RADIO.</p>
+  <p class="subtitle">VM RADIO — votre radio, partout avec vous.</p>
   <div class="download">
     <button class="install" id="installBtn" type="button">⬇️ Installer VM RADIO</button>
     <div class="status" id="status" aria-live="polite"></div>
@@ -44,26 +43,17 @@ h1 span{display:block;color:#d19aff;text-shadow:0 0 18px rgba(170,70,255,.8)}
 
 <section class="grid">
   <article class="card">
-    <img class="platform-logo" src="https://cdn.simpleicons.org/android" alt="Logo Android">
-    <h2>Android</h2>
+    <h2>🤖 Android</h2>
     <p>Avec Chrome, ouvre cette page puis appuie sur <b>Installer l'application</b> si le bouton est proposé.</p>
     <p class="step">Sinon : menu ⋮ → <b>Ajouter à l'écran d'accueil</b> ou <b>Installer l'application</b>.</p>
   </article>
   <article class="card">
-    <img class="platform-logo" src="https://cdn.simpleicons.org/apple" alt="Logo Apple">
-    <h2>iPhone / iPad</h2>
+    <h2>🍎 iPhone / iPad</h2>
     <p>Ouvre cette page dans <b>Safari</b>.</p>
     <p class="step">Partager ⬆️ → <b>Sur l'écran d'accueil</b> → <b>Ajouter</b>.</p>
   </article>
   <article class="card">
-    <img class="platform-logo" src="https://cdn.simpleicons.org/windows11" alt="Logo Windows">
-    <h2>PC / Windows</h2>
-    <p>Avec Chrome ou Edge, utilise l’icône <b>Installer</b> près de la barre d’adresse.</p>
-    <p class="step">Tu peux ensuite lancer VM RADIO dans sa propre fenêtre.</p>
-  </article>
-  <article class="card">
-    <img class="platform-logo" src="https://cdn.simpleicons.org/macos" alt="Logo macOS">
-    <h2>Mac</h2>
+    <h2>🖥️ PC / Mac</h2>
     <p>Avec Chrome ou Edge, utilise l'icône <b>Installer</b> près de la barre d'adresse.</p>
     <p class="step">Tu peux ensuite lancer VM RADIO dans sa propre fenêtre.</p>
   </article>
@@ -96,55 +86,5 @@ btn.addEventListener("click",async()=>{
 });
 if(!ios && !deferredPrompt) btn.style.display="none";
 </script>
-<script id="vm-radio-auto-update">
-(function(){
-"use strict";
-
-if(!("serviceWorker" in navigator)) return;
-
-let reloading = false;
-
-function reloadOnce(){
-  if(reloading) return;
-  reloading = true;
-  // Let the new service worker take control, then refresh the current page.
-  setTimeout(function(){ window.location.reload(); }, 250);
-}
-
-navigator.serviceWorker.addEventListener("controllerchange", reloadOnce);
-
-window.addEventListener("load", function(){
-  navigator.serviceWorker.register("./sw.js")
-    .then(function(reg){
-      // Check for a new deployed version regularly while the app is open.
-      reg.update().catch(function(){});
-      setInterval(function(){
-        reg.update().catch(function(){});
-      }, 60000);
-
-      // If an update is already waiting, activate it immediately.
-      if(reg.waiting){
-        reg.waiting.postMessage({type:"SKIP_WAITING"});
-      }
-
-      reg.addEventListener("updatefound", function(){
-        const worker = reg.installing;
-        if(!worker) return;
-
-        worker.addEventListener("statechange", function(){
-          if(worker.state === "installed" && navigator.serviceWorker.controller){
-            // New version downloaded: activate it now.
-            if(reg.waiting){
-              reg.waiting.postMessage({type:"SKIP_WAITING"});
-            }
-          }
-        });
-      });
-    })
-    .catch(function(){});
-});
-})();
-</script>
-
 </body>
 </html>
