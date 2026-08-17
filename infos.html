@@ -1630,6 +1630,20 @@ body{padding-top:36px!important}
   }
 }
 </style>
+<style id="vm-dedication-mobile-full-scroll">
+@media (max-width:768px){
+  #vmSharedDedicationBar .vmDedWindow{
+    overflow:hidden!important;
+  }
+  #vmSharedDedicationBar .vmDedTrack{
+    width:max-content!important;
+    max-width:none!important;
+  }
+  #vmSharedDedicationBar .vmDedText{
+    white-space:nowrap!important;
+  }
+}
+</style>
 </head><body>
 
 
@@ -1850,6 +1864,42 @@ else wait();
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",fix,{once:true});else fix();
   setInterval(fix,1000);
+})();
+</script>
+<script id="vm-dedication-mobile-full-scroll-js">
+(function(){
+  function adjustMobileTicker(){
+    if(window.innerWidth>768)return;
+    const bar=document.getElementById("vmSharedDedicationBar");
+    const track=bar&&bar.querySelector(".vmDedTrack");
+    const win=bar&&bar.querySelector(".vmDedWindow");
+    if(!track||!win)return;
+    const items=track.querySelectorAll(".vmDedText");
+    if(!items.length)return;
+
+    // The two duplicated text spans form one complete cycle.
+    const cycleWidth=items[0].getBoundingClientRect().width;
+    if(!cycleWidth)return;
+
+    const distance=Math.max(0,cycleWidth);
+    // Slow enough for long dedications to be read completely.
+    const duration=Math.max(24, Math.min(90, distance/15));
+    track.style.setProperty("--vm-ded-distance",distance+"px");
+    track.style.setProperty("--vm-ded-duration",duration+"s");
+    track.style.animationDuration=duration+"s";
+  }
+
+  function run(){
+    adjustMobileTicker();
+    setTimeout(adjustMobileTicker,300);
+    setTimeout(adjustMobileTicker,1000);
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",run,{once:true});
+  }else run();
+
+  window.addEventListener("resize",adjustMobileTicker);
 })();
 </script>
 </body></html>

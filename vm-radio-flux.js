@@ -76,14 +76,14 @@ function text(selector, value){
     if (!c) return;
 
     // CARTE EN DIRECT
-    text("[data-current-title]", titleCaseFirst(c.title));
+    text("[data-current-title],#title,#programCurrent", titleCaseFirst(c.title));
     text("[data-current-artist]", c.artist);
     text("[data-current-time]", clock(c.time));
     image("[data-current-cover]", c.cover);
 
     // CARTE À SUIVRE
     if (n) {
-      text("[data-next-title]", titleCaseFirst(n.title));
+      text("[data-next-title],#nextTitle,#programNext", titleCaseFirst(n.title));
       text("[data-next-artist]", n.artist);
       text("[data-next-time]", clock(n.time));
       image("[data-next-cover]", n.cover);

@@ -1585,6 +1585,26 @@ body{padding-top:36px!important}
   }
 }
 </style>
+<script id="vm-player-title-helper">
+function titleFirstUpper(v){
+  const s=String(v==null?"":v).trim();
+  return s?s.charAt(0).toLocaleUpperCase("fr-FR")+s.slice(1):"";
+}
+</script>
+<style id="vm-dedication-mobile-full-scroll">
+@media (max-width:768px){
+  #vmSharedDedicationBar .vmDedWindow{
+    overflow:hidden!important;
+  }
+  #vmSharedDedicationBar .vmDedTrack{
+    width:max-content!important;
+    max-width:none!important;
+  }
+  #vmSharedDedicationBar .vmDedText{
+    white-space:nowrap!important;
+  }
+}
+</style>
 </head>
 <body>
 <div id="vmWelcomeSplash" aria-label="Bienvenue sur l’appli">
@@ -1712,7 +1732,7 @@ body{padding-top:36px!important}
 
     function track(raw){let x=Array.isArray(raw)?raw[0]:raw;if(x&&x.track)x=x.track;if(x&&x.data&&x.data.track)x=x.data.track;if(!x)return null;return{title:x.title||x.name||x.song||"VM Radio",artist:x.artist||x.author||"Music IA By Valentin",cover:x.cover||x.cover_url||x.artwork||x.image||radio.fallback,time:x.started_at||x.start_at||x.played_at||null}}
     function img(el,url){el.src=url||radio.fallback;el.onerror=()=>{el.onerror=null;el.src=radio.fallback}}
-    async function refresh(){try{const[a,b]=await Promise.all([fetch(radio.current,{cache:"no-store"}),fetch(radio.next,{cache:"no-store"})]);const now=track(await a.json()),next=track(await b.json());if(now){previousTrack={title:$("title").textContent||"Titre précédent",artist:$("artist").textContent||"Artiste"};$("programPrevious").textContent=previousTrack.title;$("programPreviousArtist").textContent=previousTrack.artist;if($("cover").src)$("programPreviousCover").src=$("cover").src;$("title").textContent=now.title;$("artist").textContent=now.artist;$("programCurrent").textContent=now.title;$("programCurrentArtist").textContent=now.artist;img($("programCurrentCover"),now.cover);img($("cover"),now.cover);if(now.time){const t=new Date(now.time);$("started").textContent=Number.isNaN(t.getTime())?"En direct":"Depuis "+t.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}}if(next){$("nextTitle").textContent=next.title;$("programNext").textContent=next.title;img($("nextCover"),next.cover)}}catch(e){console.warn("VM Radio",e)}}
+    async function refresh(){try{const[a,b]=await Promise.all([fetch(radio.current,{cache:"no-store"}),fetch(radio.next,{cache:"no-store"})]);const now=track(await a.json()),next=track(await b.json());if(now){previousTrack={title:$("title").textContent||"Titre précédent",artist:$("artist").textContent||"Artiste"};$("programPrevious").textContent=titleFirstUpper(previousTrack.title);$("programPreviousArtist").textContent=previousTrack.artist;if($("cover").src)$("programPreviousCover").src=$("cover").src;$("title").textContent=titleFirstUpper(now.title);$("artist").textContent=now.artist;$("programCurrent").textContent=titleFirstUpper(now.title);$("programCurrentArtist").textContent=now.artist;img($("programCurrentCover"),now.cover);img($("cover"),now.cover);if(now.time){const t=new Date(now.time);$("started").textContent=Number.isNaN(t.getTime())?"En direct":"Depuis "+t.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}}if(next){$("nextTitle").textContent=next.title;$("programNext").textContent=titleFirstUpper(next.title);img($("nextCover"),next.cover)}}catch(e){console.warn("VM Radio",e)}}
     refresh();setInterval(refresh,10000);
 
     document.querySelectorAll(".program-tab").forEach(tab=>{
@@ -2230,12 +2250,48 @@ else wait();
 (function(){
   function up(v){v=String(v==null?"":v).trim();return v?v.charAt(0).toLocaleUpperCase("fr-FR")+v.slice(1):"";}
   function fix(){
-    document.querySelectorAll('[data-current-title],#currentTitle,.current-title,.live-title,.programme-current-title,.player-title').forEach(function(el){
+    document.querySelectorAll('[data-current-title],#currentTitle,#title,#programCurrent,#programPrevious,#programNext,.current-title,.live-title,.programme-current-title,.player-title').forEach(function(el){
       if(el.textContent.trim()) el.textContent=up(el.textContent);
     });
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",fix,{once:true});else fix();
   setInterval(fix,1000);
+})();
+</script>
+<script id="vm-dedication-mobile-full-scroll-js">
+(function(){
+  function adjustMobileTicker(){
+    if(window.innerWidth>768)return;
+    const bar=document.getElementById("vmSharedDedicationBar");
+    const track=bar&&bar.querySelector(".vmDedTrack");
+    const win=bar&&bar.querySelector(".vmDedWindow");
+    if(!track||!win)return;
+    const items=track.querySelectorAll(".vmDedText");
+    if(!items.length)return;
+
+    // The two duplicated text spans form one complete cycle.
+    const cycleWidth=items[0].getBoundingClientRect().width;
+    if(!cycleWidth)return;
+
+    const distance=Math.max(0,cycleWidth);
+    // Slow enough for long dedications to be read completely.
+    const duration=Math.max(24, Math.min(90, distance/15));
+    track.style.setProperty("--vm-ded-distance",distance+"px");
+    track.style.setProperty("--vm-ded-duration",duration+"s");
+    track.style.animationDuration=duration+"s";
+  }
+
+  function run(){
+    adjustMobileTicker();
+    setTimeout(adjustMobileTicker,300);
+    setTimeout(adjustMobileTicker,1000);
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",run,{once:true});
+  }else run();
+
+  window.addEventListener("resize",adjustMobileTicker);
 })();
 </script>
 </body>

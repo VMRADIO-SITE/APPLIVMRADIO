@@ -56,14 +56,14 @@ function render(c,n,h){
  if(!c)return;
 
  // PAGE D'ACCUEIL — EN DIRECT
- setText("[data-current-title],#currentTitle,.current-title",titleCaseFirst(c.title));
+ setText("[data-current-title],#currentTitle,#title,#programCurrent,.current-title",titleCaseFirst(c.title));
  setText("[data-current-artist],#currentArtist,.current-artist",c.artist);
  setText("[data-current-time],#broadcastTime,.current-time",clock(c.time));
  setImg("[data-current-cover],#currentCover,.current-cover,.cover-wrap img",c.cover);
 
  // PAGE D'ACCUEIL / PLAYER — À SUIVRE
  if(n){
-  setText("[data-next-title],#nextTitle,.next-title",titleCaseFirst(n.title));
+  setText("[data-next-title],#nextTitle,#programNext,.next-title",titleCaseFirst(n.title));
   setText("[data-next-artist],#nextArtist,.next-artist",n.artist);
   setText("[data-next-time],#nextTime,.next-time",clock(n.time));
   setImg("[data-next-cover],#nextCover,.next-cover,.next-card img",n.cover);
