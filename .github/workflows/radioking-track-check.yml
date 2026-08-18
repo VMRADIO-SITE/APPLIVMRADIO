@@ -1,0 +1,34 @@
+name: RadioKing - Détection du titre en cours
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  check-track:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le titre RadioKing
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL 'https://api.radioking.io/widget/radio/vm-radio2/track/current' -o track.json
+          cat track.json
+
+      - name: Afficher les informations du titre
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const data = JSON.parse(fs.readFileSync('track.json', 'utf8'));
+          console.log('RadioKing ID :', data.id ?? '(inconnu)');
+          console.log('Artiste      :', data.artist ?? '(inconnu)');
+          console.log('Titre        :', data.title ?? '(inconnu)');
+          console.log('Début        :', data.started_at ?? '(inconnu)');
+          console.log('Fin          :', data.end_at ?? '(inconnu)');
+          NODE
