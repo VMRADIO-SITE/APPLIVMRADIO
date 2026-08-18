@@ -159,7 +159,8 @@ function setupPrompt(){
       const current=document.getElementById("vmWelcomeSplash");
       if(!current || getComputedStyle(current).display==="none" || current.classList.contains("vmWelcomeHide")){
         observer.disconnect();
-        setTimeout(showAfterWelcome,300);
+        /* Laisse le premier écran terminer complètement son animation avant d'afficher les notifications. */
+        setTimeout(showAfterWelcome,1200);
       }
     });
     observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["class","style"]});
