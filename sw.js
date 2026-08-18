@@ -12,16 +12,34 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
-firebase.messaging();
+const messaging = firebase.messaging();
 
 /*
-  IMPORTANT : aucune notification n'est créée manuellement ici.
-  Pour les messages envoyés depuis Firebase Console avec un payload
-  "notification", Firebase Messaging s'occupe lui-même de l'affichage
-  en arrière-plan. Ajouter showNotification() ici provoquerait des doublons.
+  Background FCM handling:
+  - Firebase Console notification payloads are left to Firebase Messaging so
+    they are not displayed twice.
+  - Data-only messages are displayed explicitly here.
 */
+messaging.onBackgroundMessage(payload => {
+  if (payload && payload.notification) return;
 
-const CACHE_NAME = "vm-radio-app-v13";
+  const data = payload?.data || {};
+  const title = data.title || "VM RADIO";
+  const body = data.body || "Une nouvelle information est disponible.";
+  const link = data.url || data.link || data.click_action || "./";
+  const icon = data.icon || "./vmradio-app-icon-192.png";
+  const tag = data.tag || "vm-radio";
+
+  self.registration.showNotification(title, {
+    body,
+    icon,
+    badge: icon,
+    tag,
+    data: { url: link }
+  });
+});
+
+const CACHE_NAME = "vm-radio-app-v14";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -115,14 +133,14 @@ self.addEventListener("fetch", event => {
             if (!injected.includes("./notifications.js")) {
               injected = injected.replace(
                 /<\/body>/i,
-                '<script type="module" src="./notifications.js?v=vm19"></script></body>'
+                '<script type="module" src="./notifications.js?v=vm20"></script></body>'
               );
             }
 
             if (!injected.includes("./fcm-token-test.js")) {
               injected = injected.replace(
                 /<\/body>/i,
-                '<script src="./fcm-token-test.js?v=vm1"></script></body>'
+                '<script src="./fcm-token-test.js?v=vm2"></script></body>'
               );
             }
 
