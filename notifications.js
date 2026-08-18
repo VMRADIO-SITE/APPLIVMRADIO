@@ -17,7 +17,6 @@ style.textContent = `
 #vm-notification-overlay.vm-show{opacity:1;visibility:visible;pointer-events:auto}
 #vm-notification-prompt{position:relative;width:min(100%,1360px);max-height:calc(100vh - 36px);overflow:auto;padding:54px 60px 52px;border:2px solid #b85cff;border-radius:34px;background:linear-gradient(145deg,#050308 0%,#0d0714 55%,#050308 100%);box-shadow:0 0 38px rgba(151,48,255,.55),inset 0 0 34px rgba(151,48,255,.07);color:#fff;box-sizing:border-box}
 #vm-notification-prompt:before{content:"";position:absolute;inset:-2px;border-radius:34px;pointer-events:none;box-shadow:0 0 18px rgba(184,92,255,.9);opacity:.78}
-#vm-notification-prompt .vm-close{position:absolute;right:38px;top:28px;width:62px;height:62px;border:2px solid #a944ff;border-radius:50%;background:transparent;color:#c45cff;font-size:48px;font-weight:300;line-height:52px;cursor:pointer;z-index:2}
 #vm-notification-prompt .vm-notification-layout{display:grid;grid-template-columns:minmax(430px,46%) 1fr;gap:58px;align-items:center}
 #vm-notification-prompt .vm-logo-placeholder{min-height:420px;border:2px solid #9c3dff;border-radius:34px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 45%,rgba(113,32,198,.22),rgba(0,0,0,.6) 68%);box-shadow:0 0 24px rgba(157,61,255,.45);overflow:hidden}
 #vm-notification-prompt .vm-logo-placeholder img{width:92%;max-height:390px;object-fit:contain;border-radius:18px}
@@ -38,8 +37,7 @@ style.textContent = `
   #vm-notification-prompt .vm-notification-layout{grid-template-columns:1fr;gap:22px}
   #vm-notification-prompt .vm-logo-placeholder{min-height:230px;border-radius:25px}
   #vm-notification-prompt .vm-logo-placeholder img{max-height:215px}
-  #vm-notification-prompt .vm-close{right:15px;top:13px;width:46px;height:46px;font-size:36px;line-height:39px}
-  #vm-notification-prompt h2{font-size:clamp(38px,12vw,62px);padding-right:46px}
+  #vm-notification-prompt h2{font-size:clamp(38px,12vw,62px)}
   #vm-notification-prompt .vm-line{margin:18px 0 20px}
   #vm-notification-prompt .vm-text{font-size:clamp(17px,5vw,23px)}
   #vm-notification-prompt .vm-notification-actions{grid-template-columns:1fr 1fr;gap:10px;margin-top:28px;padding:0}
@@ -63,7 +61,6 @@ function createPrompt(){
   overlay.id="vm-notification-overlay";
   overlay.innerHTML=`
     <section id="vm-notification-prompt" role="dialog" aria-modal="true" aria-label="Notifications VM RADIO">
-      <button class="vm-close" id="vm-notification-close" type="button" aria-label="Plus tard">×</button>
       <div class="vm-notification-layout">
         <div class="vm-logo-placeholder">
           <img src="./vmradio-app-logo.jpg" alt="VM RADIO" onerror="this.style.display='none'">
@@ -145,10 +142,8 @@ function setupPrompt(){
     overlay.classList.add("vm-show");
     const accept=document.getElementById("vm-notification-accept");
     const later=document.getElementById("vm-notification-later");
-    const close=document.getElementById("vm-notification-close");
     accept.onclick=()=>activateNotifications(accept);
     later.onclick=chooseLater;
-    close.onclick=chooseLater;
   };
 
   if(welcome){
