@@ -48,18 +48,16 @@ function vm\1vmTopTitleUpper(\2)\3return s?s.charAt(0).toLocaleUpperCase("fr-FR"
   function clock(v){
     if (!v) return "--:--";
     const d = new Date(v);
-    return Number.isNaN(d.getTime()) ? "--:--" :
-      d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+    return Number.isNaN(d.getTime()) ? "--:--" : d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
   }
 
   function titleCaseFirst(v){
-  const s = String(v == null ? "" : v).trim();
-  return s ? s.charAt(0).toLocaleUpperCase("fr-FR") + s.slice(1) : "";
-}
-function text(selector, value){
-    document.querySelectorAll(selector).forEach(el => {
-      el.textContent = value == null ? "" : value;
-    });
+    const s = String(v == null ? "" : v).trim();
+    return s ? s.charAt(0).toLocaleUpperCase("fr-FR") + s.slice(1) : "";
+  }
+
+  function text(selector, value){
+    document.querySelectorAll(selector).forEach(el => { el.textContent = value == null ? "" : value; });
   }
 
   function image(selector, value){
@@ -75,13 +73,11 @@ function text(selector, value){
     const n = data.next;
     if (!c) return;
 
-    // CARTE EN DIRECT
     text("[data-current-title],#title,#programCurrent", titleCaseFirst(c.title));
     text("[data-current-artist]", c.artist);
     text("[data-current-time]", clock(c.time));
     image("[data-current-cover]", c.cover);
 
-    // CARTE À SUIVRE
     if (n) {
       text("[data-next-title],#nextTitle,#programNext", titleCaseFirst(n.title));
       text("[data-next-artist]", n.artist);
@@ -89,13 +85,11 @@ function text(selector, value){
       image("[data-next-cover]", n.cover);
     }
 
-    // CARTES À LA UNE / EN DIRECT
     text("[data-news-current]", titleCaseFirst(c.title));
     text("[data-news-current-artist]", c.artist);
     text("[data-news-current-time]", clock(c.time));
     image("[data-news-current-cover]", c.cover);
 
-    // CARTES À LA UNE / À SUIVRE
     if (n) {
       text("[data-news-next]", titleCaseFirst(n.title));
       text("[data-news-next-artist]", n.artist);
@@ -103,7 +97,6 @@ function text(selector, value){
       image("[data-news-next-cover]", n.cover);
     }
 
-    // DERNIER TITRE TERMINÉ : vient directement de l'historique RadioKing.
     const last = data.history.find(x => x.id !== c.id && x.type === "music") || null;
     if (last) {
       text("[data-news-last]", last.title);
@@ -112,29 +105,17 @@ function text(selector, value){
       image("[data-news-last-cover]", last.cover);
     }
 
-    // MODULE "TITRES PRÉCÉDENTS" DE L'ACCUEIL.
     const previous = document.querySelector("[data-previous]");
     if (previous && Array.isArray(data.history)) {
-      const tracks = data.history
-        .filter(x => x.id !== c.id && x.type === "music")
-        .slice(0,3);
-
+      const tracks = data.history.filter(x => x.id !== c.id && x.type === "music").slice(0,3);
       previous.innerHTML = "";
       tracks.forEach(x => {
         const row = document.createElement("div");
         row.className = "vm-programme-previous-item";
-        row.innerHTML =
-          '<img alt="">' +
-          '<div class="previous-info">' +
-          '<strong class="previous-title"></strong>' +
-          '<small class="previous-artist"></small>' +
-          '<em class="previous-time"></em>' +
-          '</div>';
-
+        row.innerHTML = '<img alt=""><div class="previous-info"><strong class="previous-title"></strong><small class="previous-artist"></small><em class="previous-time"></em></div>';
         const im = row.querySelector("img");
         im.src = x.cover || FALLBACK_COVER;
         im.onerror = () => { im.src = FALLBACK_COVER; };
-
         row.querySelector(".previous-title").textContent = titleCaseFirst(x.title);
         row.querySelector(".previous-artist").textContent = x.artist;
         row.querySelector(".previous-time").textContent = clock(x.time);
@@ -145,7 +126,6 @@ function text(selector, value){
 
   async function update(){
     try {
-      // Les 3 sources sont indépendantes : une panne de "next" ne casse pas "current".
       const [curRaw, nextRaw, historyRaw] = await Promise.allSettled([
         json(ENDPOINTS.current),
         json(ENDPOINTS.next),
@@ -154,20 +134,14 @@ function text(selector, value){
 
       const current = curRaw.status === "fulfilled" ? normalise(curRaw.value) : null;
       if (!current) return;
-
-      const next = nextRaw.status === "fulfilled"
-        ? normalise(nextRaw.value)
-        : null;
+      const next = nextRaw.status === "fulfilled" ? normalise(nextRaw.value) : null;
 
       let history = [];
       if (historyRaw.status === "fulfilled") {
         const arr = Array.isArray(historyRaw.value) ? historyRaw.value : [historyRaw.value];
         history = arr.map(normalise).filter(Boolean);
       }
-
-      // Si le endpoint historique renvoie un titre publicitaire, on l'ignore.
       history = history.filter(x => x.type === "music");
-
       render({ current, next, history, updated: Date.now() });
     } catch (e) {
       console.warn("VM RADIO flux:", e);
@@ -176,4 +150,9 @@ function text(selector, value){
 
   update();
   setInterval(update, REFRESH_MS);
+
+  // Notifications : chargées sans modifier le design du player ni du programme.
+  setTimeout(() => {
+    import("./notifications.js").catch(error => console.warn("VM RADIO notifications:", error));
+  }, 0);
 })();
