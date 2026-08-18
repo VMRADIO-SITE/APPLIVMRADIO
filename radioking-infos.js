@@ -1,10 +1,18 @@
 (() => {
-  const DATA_URL = './data/radioking-latest.json';
-  const POLL_MS = 30000;
+  const API_URL = 'https://api.radioking.io/widget/radio/vm-radio2/track/current';
+  const POLL_MS = 10000;
   const MARKER = 'vm-radioking-live-info';
+  const FALLBACK = 'https://image.radioking.io/radios/917591/cover/custom/73962df6-7c51-4f8a-a9d0-801882271ca1.png';
 
   function esc(value) {
     return String(value ?? '').replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
+  }
+
+  function first(...values) {
+    for (const value of values) {
+      if (value !== undefined && value !== null && String(value).trim() !== '') return value;
+    }
+    return '';
   }
 
   function formatDate(value) {
@@ -14,11 +22,35 @@
     return d.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
   }
 
+  function normalize(raw) {
+    let x = Array.isArray(raw) ? raw[0] : raw;
+    if (!x) return null;
+    if (x.track) x = x.track;
+    if (x.data && x.data.track) x = x.data.track;
+    const title = first(x.title, x.name, x.song, x.track_title);
+    if (!title) return null;
+    return {
+      id: String(first(x.id, x.track_id, title)),
+      title: String(title).trim(),
+      artist: String(first(x.artist, x.author, x.track_artist) || 'Music IA By Valentin').trim(),
+      cover: String(first(x.cover, x.cover_url, x.artwork, x.artwork_url, x.image, x.picture) || FALLBACK),
+      time: first(x.started_at, x.start_at, x.played_at, x.scheduled_at, x.time)
+    };
+  }
+
   function placeInsideRadio() {
-    const root = document.getElementById(MARKER);
-    if (!root) return;
-    const radioCard = document.querySelector('.info-card');
-    if (radioCard && root.parentElement !== radioCard) radioCard.appendChild(root);
+    const radioCard = document.querySelector('.info-grid .info-card');
+    if (!radioCard) return null;
+
+    let root = document.getElementById(MARKER);
+    if (!root) {
+      root = document.createElement('div');
+      root.id = MARKER;
+      radioCard.appendChild(root);
+    } else if (root.parentElement !== radioCard) {
+      radioCard.appendChild(root);
+    }
+    return root;
   }
 
   function installFrameStyle() {
@@ -43,40 +75,37 @@
   }
 
   async function refresh() {
-    const root = document.getElementById(MARKER);
+    const root = placeInsideRadio();
     if (!root) return;
 
     try {
-      const response = await fetch(`${DATA_URL}?t=${Date.now()}`, { cache: 'no-store' });
+      const response = await fetch(`${API_URL}?_=${Date.now()}`, { cache: 'no-store', credentials: 'omit' });
       if (!response.ok) throw new Error('Flux indisponible');
-      const data = await response.json();
+      const data = normalize(await response.json());
 
-      if (!data.id || !data.title) {
-        root.innerHTML = '<div class="vmrk-empty">Aucune nouvelle information pour le moment.</div>';
+      if (!data || !data.title) {
+        root.innerHTML = '<div class="vmrk-empty">Aucun titre en direct pour le moment.</div>';
         return;
       }
 
       root.innerHTML = `
-        <div class="vmrk-badge"><span></span> INFO EN TEMPS RÉEL</div>
+        <div class="vmrk-badge"><span></span> EN DIRECT — VM RADIO</div>
         <div class="vmrk-main">
-          ${data.cover ? `<img class="vmrk-cover" src="${esc(data.cover)}" alt="Pochette du titre">` : ''}
+          <img class="vmrk-cover" src="${esc(data.cover)}" alt="Pochette du titre" onerror="this.onerror=null;this.src='${FALLBACK}'">
           <div class="vmrk-info">
-            <div class="vmrk-label">Nouveau titre 🎵</div>
+            <div class="vmrk-label">Titre actuellement diffusé 🎵</div>
             <div class="vmrk-title">${esc(data.title)}</div>
-            <div class="vmrk-artist">${esc(data.artist || 'Artiste inconnu')}</div>
-            <div class="vmrk-date">Mis à jour : ${esc(formatDate(data.updated_at || data.started_at))}</div>
+            <div class="vmrk-artist">${esc(data.artist)}</div>
+            <div class="vmrk-date">Mis à jour : ${esc(formatDate(data.time))}</div>
           </div>
         </div>`;
     } catch (_) {
-      root.innerHTML = '<div class="vmrk-empty">Les informations seront mises à jour automatiquement.</div>';
+      root.innerHTML = '<div class="vmrk-empty">Connexion au direct en cours…</div>';
     }
   }
 
   function start() {
-    placeInsideRadio();
     installFrameStyle();
-    const root = document.getElementById(MARKER);
-    if (!root) return;
     refresh();
     setInterval(refresh, POLL_MS);
   }
