@@ -1,6 +1,3 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
-import { getMessaging, getToken, onMessage, isSupported } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-messaging.js";
-
 const firebaseConfig = {
   apiKey: "AIzaSyB0LSbKdAAEfLg48c4DJO2hdyvjx0TySko",
   authDomain: "vm-radio-notifications.firebaseapp.com",
@@ -84,39 +81,33 @@ function mountNotificationUI() {
     return card;
   }
 
-  return null;
+  const target = document.querySelector(".home-content") || document.querySelector(".app") || document.body;
+  target.prepend(card);
+  return card;
 }
 
-async function setupNotifications() {
-  mountNotificationUI();
-
-  const observer = new MutationObserver(() => {
-    if (!document.getElementById("vm-notifications-card")) mountNotificationUI();
-    if (document.getElementById("vm-notifications-card")) observer.disconnect();
-  });
-  observer.observe(document.body, { childList:true, subtree:true, attributes:true, attributeFilter:["class","style","aria-hidden"] });
-
-  setTimeout(() => {
-    if (!document.getElementById("vm-notifications-card")) {
-      const fallback = createNotificationCard();
-      const target = document.querySelector(".home-content") || document.querySelector(".app") || document.body;
-      target.prepend(fallback);
-      observer.disconnect();
-    }
-  }, 8000);
-
+async function activateNotifications(btn, stat) {
   try {
-    const supported = await isSupported();
-    const button = () => document.getElementById("vm-notifications-button");
-    const status = () => document.getElementById("vm-notifications-status");
+    btn.disabled = true;
+    stat.textContent = "Activation des notifications…";
 
-    if (!supported || !("Notification" in window) || !("serviceWorker" in navigator)) {
-      setTimeout(() => {
-        if (status()) status().textContent = "Les notifications ne sont pas disponibles sur ce navigateur/appareil.";
-        if (button()) { button().disabled = true; button().style.opacity = ".5"; }
-      }, 50);
+    if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+      throw new Error("Notifications non disponibles");
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      stat.textContent = "Les notifications n’ont pas été autorisées.";
+      btn.disabled = false;
       return;
     }
+
+    stat.textContent = "Connexion au service de notifications…";
+
+    const [{ initializeApp }, { getMessaging, getToken, onMessage }] = await Promise.all([
+      import("https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/12.17.1/firebase-messaging.js")
+    ]);
 
     const app = initializeApp(firebaseConfig);
     const messaging = getMessaging(app);
@@ -132,52 +123,54 @@ async function setupNotifications() {
       }
     });
 
-    const attachButton = () => {
-      const btn = button();
-      const stat = status();
-      if (!btn || btn.dataset.vmBound === "1") return;
-      btn.dataset.vmBound = "1";
+    const token = await getToken(messaging, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: registration
+    });
 
-      if (Notification.permission === "granted") {
-        btn.textContent = "Notifications activées ✓";
-        stat.textContent = "Tu recevras les informations importantes de VM RADIO.";
-      }
+    if (!token) throw new Error("Token FCM indisponible");
 
-      btn.addEventListener("click", async () => {
-        try {
-          btn.disabled = true;
-          stat.textContent = "Activation des notifications…";
-          const permission = await Notification.requestPermission();
-          if (permission !== "granted") {
-            stat.textContent = "Les notifications n’ont pas été autorisées.";
-            btn.disabled = false;
-            return;
-          }
-
-          const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
-          if (!token) throw new Error("Token FCM indisponible");
-
-          localStorage.setItem("vmRadioFcmToken", token);
-          btn.textContent = "Notifications activées ✓";
-          stat.textContent = "C’est activé ! Tu recevras les infos, titres et mises à jour VM RADIO.";
-          btn.disabled = false;
-        } catch (error) {
-          console.error("VM RADIO notifications:", error);
-          stat.textContent = "Impossible d’activer les notifications pour le moment.";
-          btn.disabled = false;
-        }
-      });
-    };
-
-    const binder = setInterval(() => {
-      attachButton();
-      if (document.getElementById("vm-notifications-button")?.dataset.vmBound === "1") clearInterval(binder);
-    }, 250);
-    setTimeout(() => clearInterval(binder), 10000);
+    localStorage.setItem("vmRadioFcmToken", token);
+    btn.textContent = "Notifications activées ✓";
+    stat.textContent = "C’est activé ! Tu recevras les infos, titres et mises à jour VM RADIO.";
+    btn.disabled = false;
   } catch (error) {
-    console.error("VM RADIO notifications init:", error);
+    console.error("VM RADIO notifications:", error);
+    stat.textContent = "Impossible d’activer les notifications pour le moment.";
+    btn.disabled = false;
   }
 }
 
-if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", setupNotifications, { once: true });
-else setupNotifications();
+function bindButton() {
+  const btn = document.getElementById("vm-notifications-button");
+  const stat = document.getElementById("vm-notifications-status");
+  if (!btn || btn.dataset.vmBound === "1") return;
+
+  btn.dataset.vmBound = "1";
+
+  if ("Notification" in window && Notification.permission === "granted") {
+    btn.textContent = "Notifications activées ✓";
+    stat.textContent = "Tu recevras les informations importantes de VM RADIO.";
+  }
+
+  btn.addEventListener("click", () => activateNotifications(btn, stat));
+}
+
+function setupNotifications() {
+  // L’interface est créée avant tout chargement Firebase.
+  // Cela évite qu’un blocage Firebase/iOS empêche l’affichage du bouton.
+  mountNotificationUI();
+  bindButton();
+
+  const observer = new MutationObserver(() => {
+    if (!document.getElementById("vm-notifications-card")) mountNotificationUI();
+    bindButton();
+  });
+  observer.observe(document.body, { childList:true, subtree:true, attributes:true, attributeFilter:["class","style","aria-hidden"] });
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", setupNotifications, { once: true });
+} else {
+  setupNotifications();
+}
