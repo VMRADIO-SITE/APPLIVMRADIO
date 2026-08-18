@@ -1,4 +1,37 @@
-const CACHE_NAME = "vm-radio-app-v5";
+importScripts("https://www.gstatic.com/firebasejs/12.17.1/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/12.17.1/firebase-messaging-compat.js");
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB0LSbKdAAEfLg48c4DJO2hdyvjx0TySko",
+  authDomain: "vm-radio-notifications.firebaseapp.com",
+  projectId: "vm-radio-notifications",
+  storageBucket: "vm-radio-notifications.firebasestorage.app",
+  messagingSenderId: "573483400068",
+  appId: "1:573483400068:web:5e3b80a9ac49dc284ebbd1",
+  measurementId: "G-ZJPS49DKG3"
+};
+
+firebase.initializeApp(firebaseConfig);
+const messaging = firebase.messaging();
+
+messaging.onBackgroundMessage(payload => {
+  const data = payload.data || {};
+  const notification = payload.notification || {};
+  const title = data.title || notification.title || "VM RADIO";
+  const body = data.body || notification.body || "Une nouvelle information est disponible.";
+  const url = data.url || notification.click_action || "./";
+
+  return self.registration.showNotification(title, {
+    body,
+    icon: data.icon || notification.icon || "./vmradio-app-icon-192.png",
+    badge: data.badge || "./vmradio-app-icon-192.png",
+    tag: data.tag || "vm-radio",
+    renotify: true,
+    data: { url }
+  });
+});
+
+const CACHE_NAME = "vm-radio-app-v6";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -34,28 +67,29 @@ self.addEventListener("message", event => {
   if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
 });
 
-// Réception des notifications Web Push.
-// Le serveur/FCM pourra envoyer un payload du type :
-// { title, body, icon, url, tag }
 self.addEventListener("push", event => {
-  let data = {};
-  try {
-    data = event.data ? event.data.json() : {};
-  } catch (_) {
-    data = { body: event.data ? event.data.text() : "" };
+  // Firebase Messaging handles FCM payloads. For generic Web Push payloads,
+  // keep a small fallback so the service worker can still display them.
+  if (event.data) {
+    let data = {};
+    try {
+      data = event.data.json();
+    } catch (_) {
+      data = { body: event.data.text() };
+    }
+
+    if (!data.from || data.from !== "firebase") {
+      const title = data.title || "VM RADIO";
+      event.waitUntil(self.registration.showNotification(title, {
+        body: data.body || "Une nouvelle information est disponible.",
+        icon: data.icon || "./vmradio-app-icon-192.png",
+        badge: data.badge || "./vmradio-app-icon-192.png",
+        tag: data.tag || "vm-radio",
+        renotify: true,
+        data: { url: data.url || "./" }
+      }));
+    }
   }
-
-  const title = data.title || "VM RADIO";
-  const options = {
-    body: data.body || "Une nouvelle information est disponible.",
-    icon: data.icon || "./vmradio-app-icon-192.png",
-    badge: data.badge || "./vmradio-app-icon-192.png",
-    tag: data.tag || "vm-radio",
-    renotify: true,
-    data: { url: data.url || "./" }
-  };
-
-  event.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener("notificationclick", event => {
@@ -82,13 +116,11 @@ self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
-  // La page de téléchargement doit toujours récupérer la dernière version.
   if (url.pathname.endsWith("/telecharger.html")) {
     event.respondWith(fetch(event.request, { cache: "no-store" }));
     return;
   }
 
-  // Ne jamais intercepter le flux radio ou les ressources audio.
   if (/radio|stream|audio/i.test(url.pathname)) return;
 
   event.respondWith(
