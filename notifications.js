@@ -1,10 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
-import {
-  getMessaging,
-  getToken,
-  onMessage,
-  isSupported
-} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-messaging.js";
+import { getMessaging, getToken, onMessage, isSupported } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-messaging.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB0LSbKdAAEfLg48c4DJO2hdyvjx0TySko",
@@ -32,11 +27,7 @@ const notificationMarkup = `
 const notificationStyle = document.createElement("style");
 notificationStyle.id = "vm-notifications-style";
 notificationStyle.textContent = `
-  #vm-notifications-card{
-    margin:12px 0 0;padding:13px;border:1px solid rgba(184,92,255,.45);
-    border-radius:16px;background:linear-gradient(145deg,rgba(35,17,51,.96),rgba(13,9,19,.98));
-    box-shadow:0 8px 24px rgba(0,0,0,.2);color:#fff;text-align:left;
-  }
+  #vm-notifications-card{margin:12px 0 0;padding:13px;border:1px solid rgba(184,92,255,.45);border-radius:16px;background:linear-gradient(145deg,rgba(35,17,51,.96),rgba(13,9,19,.98));box-shadow:0 8px 24px rgba(0,0,0,.2);color:#fff;text-align:left}
   #vm-notifications-card .vm-notification-row{display:flex;align-items:center;gap:10px}
   #vm-notifications-card .vm-notification-icon{width:38px;height:38px;flex:0 0 38px;border-radius:12px;display:grid;place-items:center;background:#28143a;font-size:19px}
   #vm-notifications-card .vm-notification-copy{min-width:0;flex:1}
@@ -45,7 +36,6 @@ notificationStyle.textContent = `
   #vm-notifications-button{width:100%;margin-top:10px;border:0;border-radius:11px;padding:10px;background:linear-gradient(135deg,#c05cff,#7433dd);color:#fff;font-weight:800;font-size:11px;cursor:pointer}
   #vm-notifications-button:disabled{opacity:.55;cursor:default}
 `;
-
 document.head.appendChild(notificationStyle);
 
 function isVisible(el) {
@@ -76,7 +66,6 @@ function findWelcomePopup() {
 
 function createNotificationCard() {
   if (document.getElementById("vm-notifications-card")) return document.getElementById("vm-notifications-card");
-
   const card = document.createElement("section");
   card.id = "vm-notifications-card";
   card.innerHTML = notificationMarkup;
@@ -90,29 +79,23 @@ function mountNotificationUI() {
   const popup = findWelcomePopup();
 
   if (popup) {
-    // Le bouton est placé directement dans le pop-up de bienvenue, sans remplacer son contenu.
-    const container = popup.querySelector(".modal-content,.popup-content,[class*="content"],.dialog-content") || popup;
+    const container = popup.querySelector('.modal-content,.popup-content,[class*="content"],.dialog-content') || popup;
     container.appendChild(card);
     return card;
   }
 
-  // Si le pop-up n'est pas encore ouvert, on le remontera automatiquement lorsqu'il apparaîtra.
   return null;
 }
 
 async function setupNotifications() {
-  let card = mountNotificationUI();
+  mountNotificationUI();
 
   const observer = new MutationObserver(() => {
-    if (!document.getElementById("vm-notifications-card")) {
-      card = mountNotificationUI() || card;
-    }
+    if (!document.getElementById("vm-notifications-card")) mountNotificationUI();
     if (document.getElementById("vm-notifications-card")) observer.disconnect();
   });
   observer.observe(document.body, { childList:true, subtree:true, attributes:true, attributeFilter:["class","style","aria-hidden"] });
 
-  // Sécurité : si aucun pop-up de bienvenue n'existe dans cette version de l'appli,
-  // le module reste accessible sur l'accueil au lieu de disparaître complètement.
   setTimeout(() => {
     if (!document.getElementById("vm-notifications-card")) {
       const fallback = createNotificationCard();
@@ -164,7 +147,6 @@ async function setupNotifications() {
         try {
           btn.disabled = true;
           stat.textContent = "Activation des notifications…";
-
           const permission = await Notification.requestPermission();
           if (permission !== "granted") {
             stat.textContent = "Les notifications n’ont pas été autorisées.";
@@ -172,11 +154,7 @@ async function setupNotifications() {
             return;
           }
 
-          const token = await getToken(messaging, {
-            vapidKey: VAPID_KEY,
-            serviceWorkerRegistration: registration
-          });
-
+          const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
           if (!token) throw new Error("Token FCM indisponible");
 
           localStorage.setItem("vmRadioFcmToken", token);
@@ -191,7 +169,6 @@ async function setupNotifications() {
       });
     };
 
-    // Le bouton peut être créé quelques instants après l'ouverture du pop-up.
     const binder = setInterval(() => {
       attachButton();
       if (document.getElementById("vm-notifications-button")?.dataset.vmBound === "1") clearInterval(binder);
@@ -202,8 +179,5 @@ async function setupNotifications() {
   }
 }
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", setupNotifications, { once: true });
-} else {
-  setupNotifications();
-}
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", setupNotifications, { once: true });
+else setupNotifications();
