@@ -58,8 +58,12 @@ button{min-height:68px;padding:12px 8px;border-radius:17px;font-size:clamp(15px,
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
 import {getMessaging,getToken} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-messaging.js";
+
 const firebaseConfig={apiKey:"AIzaSyB0LSbKdAAEfLg48c4DJO2hdyvjx0TySko",authDomain:"vm-radio-notifications.firebaseapp.com",projectId:"vm-radio-notifications",storageBucket:"vm-radio-notifications.firebasestorage.app",messagingSenderId:"573483400068",appId:"1:573483400068:web:5e3b80a9ac49dc284ebbd1",measurementId:"G-ZJPS49DKG3"};
-const VAPID_KEY="BNJ2HTuiALjnhLqWHI9RmK6PJsXVmrizzennfo_anzDJBBXgEdXzZy70hIpQao-hxRtylbSsquww8p05uRk1Sgk";
+
+// Même clé VAPID que notifications.js
+const VAPID_KEY="BPfmffszHy-sXlIEqIOJDTxPkC6-hn-4ThlFfZy9fgIp5DBxE_8XgqVzQLwIDnjlQv4phiUS_o8zfB9bjLGY3FY";
+
 const gate=document.getElementById("notificationGate");
 const closeGate=()=>{gate.classList.add("closing");setTimeout(()=>gate.remove(),180)};
 const go=()=>{localStorage.setItem("vmRadioNotificationPromptShownV4","1");location.replace("./index.html?notifications=done")};
@@ -71,17 +75,26 @@ document.getElementById("accept").onclick=async()=>{
   try{
     b.disabled=true;
     closeGate();
-    if(!(window.Notification)||!("serviceWorker" in navigator))throw new Error("Notifications indisponibles");
+
+    if(!(window.Notification)||!("serviceWorker" in navigator))
+      throw new Error("Notifications indisponibles");
+
     const p=await Notification.requestPermission();
     if(p!=="granted"){go();return}
+
     const app=initializeApp(firebaseConfig,"vmRadioNotificationsGate");
     const messaging=getMessaging(app);
-    const reg=await navigator.serviceWorker.register("./sw.js?vm=11",{scope:"./"});
-    const token=await getToken(messaging,{vapidKey:VAPID_KEY,serviceWorkerRegistration:reg});
+
+    const reg=await navigator.serviceWorker.register("./sw.js?vm=16",{scope:"./"});
+    const token=await getToken(messaging,{
+      vapidKey:VAPID_KEY,
+      serviceWorkerRegistration:reg
+    });
+
     if(token)localStorage.setItem("vmRadioFcmToken",token);
     go();
   }catch(e){
-    console.error(e);
+    console.error("VM RADIO notifications gate:",e);
     go();
   }
 };
