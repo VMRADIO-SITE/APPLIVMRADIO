@@ -14,13 +14,14 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-/*
-  Background FCM handling:
-  - Firebase Console notification payloads are left to Firebase Messaging so
-    they are not displayed twice.
-  - Data-only messages are displayed explicitly here.
-*/
+// Diagnostic FCM: log every browser push that reaches this service worker.
+self.addEventListener("push", event => {
+  console.log("VM RADIO FCM PUSH EVENT", event.data ? event.data.text() : "<no payload>");
+});
+
 messaging.onBackgroundMessage(payload => {
+  console.log("VM RADIO FCM BACKGROUND MESSAGE", payload);
+
   if (payload && payload.notification) return;
 
   const data = payload?.data || {};
@@ -39,7 +40,7 @@ messaging.onBackgroundMessage(payload => {
   });
 });
 
-const CACHE_NAME = "vm-radio-app-v14";
+const CACHE_NAME = "vm-radio-app-v15";
 const APP_SHELL = [
   "./",
   "./index.html",
