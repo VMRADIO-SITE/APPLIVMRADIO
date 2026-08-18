@@ -21,7 +21,7 @@ firebase.messaging();
   en arrière-plan. Ajouter showNotification() ici provoquerait des doublons.
 */
 
-const CACHE_NAME = "vm-radio-app-v12";
+const CACHE_NAME = "vm-radio-app-v13";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -61,19 +61,30 @@ self.addEventListener("message", event => {
 
 self.addEventListener("notificationclick", event => {
   event.notification.close();
-  const targetUrl = event.notification.data && event.notification.data.url
-    ? event.notification.data.url
-    : "./";
+
+  const notificationData = event.notification.data || {};
+  const fcmMessage = notificationData.FCM_MSG || notificationData.fcmMessage || {};
+  const fcmOptions = fcmMessage.notification?.click_action
+    ? { link: fcmMessage.notification.click_action }
+    : (fcmMessage.fcmOptions || {});
+
+  const targetUrl = notificationData.url
+    || notificationData.link
+    || fcmOptions.link
+    || fcmOptions.click_action
+    || "./";
+
+  const absoluteTarget = new URL(targetUrl, self.location.href).href;
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then(windowClients => {
       for (const client of windowClients) {
         if ("focus" in client) {
-          if ("navigate" in client) client.navigate(targetUrl);
+          if ("navigate" in client) client.navigate(absoluteTarget);
           return client.focus();
         }
       }
-      if (clients.openWindow) return clients.openWindow(targetUrl);
+      if (clients.openWindow) return clients.openWindow(absoluteTarget);
     })
   );
 });
