@@ -30,8 +30,8 @@ messaging.onBackgroundMessage(payload => {
   self.registration.showNotification(title, { body, icon, badge: icon, tag, data: { url: link } });
 });
 
-// v16 : cache séparé pour forcer l'activation des nouvelles versions de l'application.
-const CACHE_NAME = "vm-radio-app-v16";
+// v17 : nouvelle version pour déclencher la détection de mise à jour.
+const CACHE_NAME = "vm-radio-app-v17";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -121,14 +121,49 @@ self.addEventListener("fetch", event => {
               injected = injected.replace(/<\/body>/i, '<script type="module" src="./fcm-token-sync.js?v=1"></script></body>');
             }
 
-            // Correctif flux : reconnexion automatique en cas de décrochage du direct.
             if (!injected.includes("vm-radio-audio-recovery")) {
-              injected = injected.replace(/<\/body>/i, `<script id="vm-radio-audio-recovery">(function(){\nconst a=document.getElementById("audio");\nif(!a||a.dataset.vmRecoveryBound)return;\na.dataset.vmRecoveryBound="1";\nconst STREAM="https://play.radioking.io/vm-radio2";\nlet wanted=false,retries=0,timer=0,stallTimer=0;\nfunction play(){if(!wanted)return;clearTimeout(timer);timer=setTimeout(()=>a.play().catch(()=>{}),250);}\nfunction recover(reason){if(!wanted)return;retries=Math.min(retries+1,8);const delay=Math.min(12000,700*Math.pow(1.55,retries-1));clearTimeout(timer);timer=setTimeout(()=>{if(!wanted)return;a.pause();a.src=STREAM+"?vm_retry="+Date.now();a.load();a.play().catch(()=>{});},delay);console.warn("VM RADIO flux audio : reconnexion",reason,"tentative",retries);}\na.addEventListener("play",()=>{wanted=true;retries=0;clearTimeout(stallTimer);});\na.addEventListener("pause",()=>{wanted=false;clearTimeout(timer);clearTimeout(stallTimer);});\na.addEventListener("error",()=>recover("error"));\na.addEventListener("stalled",()=>{clearTimeout(stallTimer);stallTimer=setTimeout(()=>recover("stalled"),7000);});\na.addEventListener("waiting",()=>{clearTimeout(stallTimer);stallTimer=setTimeout(()=>recover("waiting"),8000);});\na.addEventListener("playing",()=>{retries=0;clearTimeout(stallTimer);});\na.addEventListener("canplay",()=>{clearTimeout(stallTimer);});\n})();</script></body>`);
+              injected = injected.replace(/<\/body>/i, `<script id="vm-radio-audio-recovery">(function(){
+const a=document.getElementById("audio");
+if(!a||a.dataset.vmRecoveryBound)return;
+a.dataset.vmRecoveryBound="1";
+const STREAM="https://play.radioking.io/vm-radio2";
+let wanted=false,retries=0,timer=0,stallTimer=0;
+function recover(reason){if(!wanted)return;retries=Math.min(retries+1,8);const delay=Math.min(12000,700*Math.pow(1.55,retries-1));clearTimeout(timer);timer=setTimeout(()=>{if(!wanted)return;a.pause();a.src=STREAM+"?vm_retry="+Date.now();a.load();a.play().catch(()=>{});},delay);console.warn("VM RADIO flux audio : reconnexion",reason,"tentative",retries);}
+a.addEventListener("play",()=>{wanted=true;retries=0;clearTimeout(stallTimer);});
+a.addEventListener("pause",()=>{wanted=false;clearTimeout(timer);clearTimeout(stallTimer);});
+a.addEventListener("error",()=>recover("error"));
+a.addEventListener("stalled",()=>{clearTimeout(stallTimer);stallTimer=setTimeout(()=>recover("stalled"),7000);});
+a.addEventListener("waiting",()=>{clearTimeout(stallTimer);stallTimer=setTimeout(()=>recover("waiting"),8000);});
+a.addEventListener("playing",()=>{retries=0;clearTimeout(stallTimer);});
+a.addEventListener("canplay",()=>clearTimeout(stallTimer));
+})();</script></body>`);
             }
 
-            // Mise à jour automatique : vérifie régulièrement le Service Worker et recharge seulement lorsqu'une nouvelle version prend le contrôle.
             if (!injected.includes("vm-radio-auto-update")) {
-              injected = injected.replace(/<\/body>/i, `<script id="vm-radio-auto-update">(function(){\nif(!("serviceWorker" in navigator))return;\nconst hadController=!!navigator.serviceWorker.controller;\nlet reloading=false;\nnavigator.serviceWorker.addEventListener("controllerchange",function(){if(hadController&&!reloading){reloading=true;location.reload();}});\nnavigator.serviceWorker.ready.then(reg=>{\n  const check=()=>reg.update().catch(()=>{});\n  check();\n  setInterval(check,300000);\n  reg.addEventListener("updatefound",function(){const w=reg.installing;if(!w)return;w.addEventListener("statechange",function(){if(w.state==="installed"&&navigator.serviceWorker.controller){w.postMessage({type:"SKIP_WAITING"});}});});\n});\n})();</script></body>`);
+              injected = injected.replace(/<\/body>/i, `<script id="vm-radio-auto-update">(function(){
+if(!("serviceWorker" in navigator))return;
+let reloading=false;
+let updatePending=false;
+function showUpdate(){
+  if(updatePending)return;
+  updatePending=true;
+  const n=document.createElement("div");
+  n.id="vm-radio-update-notice";
+  n.setAttribute("role","status");
+  n.innerHTML='<div class="vm-update-card"><div class="vm-update-title">🔔 Nouvelle mise à jour</div><div class="vm-update-text">Une nouvelle version de VM RADIO est disponible.</div><div class="vm-update-actions"><button id="vm-update-now">Mettre à jour</button><button id="vm-update-later">Plus tard</button></div></div>';
+  const s=document.createElement("style");
+  s.textContent='#vm-radio-update-notice{position:fixed;inset:auto 16px 16px;z-index:2147483646;display:flex;justify-content:center;font-family:Arial,Helvetica,sans-serif}.vm-update-card{width:min(100%,520px);padding:22px;border:2px solid #b85cff;border-radius:24px;background:linear-gradient(145deg,#050308,#0d0714);box-shadow:0 0 30px rgba(151,48,255,.5);color:#fff}.vm-update-title{font-size:22px;font-weight:900}.vm-update-text{margin:10px 0 18px;color:#d4ceda;line-height:1.4}.vm-update-actions{display:flex;gap:10px}.vm-update-actions button{flex:1;border-radius:14px;padding:13px;border:0;font-weight:800;cursor:pointer}.vm-update-actions button:first-child{background:linear-gradient(135deg,#c05cff,#6d20ed);color:#fff}.vm-update-actions button:last-child{background:#120d18;color:#fff;border:1px solid #8b2cff}';
+  document.head.appendChild(s);document.body.appendChild(n);
+  n.querySelector("#vm-update-later").onclick=()=>n.remove();
+  n.querySelector("#vm-update-now").onclick=async()=>{n.remove();if(!navigator.serviceWorker.controller){location.reload();return;}try{const reg=await navigator.serviceWorker.getRegistration();if(reg&&reg.waiting)reg.waiting.postMessage({type:"SKIP_WAITING"});else if(reg)await reg.update();}catch(e){location.reload();}};
+}
+navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!reloading){reloading=true;location.reload();}});
+navigator.serviceWorker.ready.then(reg=>{
+  const check=()=>reg.update().catch(()=>{});
+  check();setInterval(check,300000);
+  reg.addEventListener("updatefound",()=>{const w=reg.installing;if(!w)return;w.addEventListener("statechange",()=>{if(w.state==="installed"&&navigator.serviceWorker.controller)showUpdate();});});
+});
+})();</script></body>`);
             }
 
             const headers = new Headers(response.headers);
