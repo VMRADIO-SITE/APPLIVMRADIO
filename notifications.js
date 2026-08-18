@@ -9,9 +9,9 @@ const firebaseConfig = {
 };
 
 const VAPID_KEY = "BNJ2HTuiALjnhLqWHI9RmK6PJsXVmrizzennfo_anzDJBBXgEdXzZy70hIpQao-hxRtylbSsquww8p05uRk1Sgk";
-const NOTICE_KEY = "vmRadioNotificationPromptShownV2";
+/* Nouvelle clé pour forcer l'affichage de cette nouvelle version du popup. */
+const NOTICE_KEY = "vmRadioNotificationPromptShownV3";
 
-/* Supprime l'ancien petit bloc injecté par l'ancien système de notifications. */
 function removeLegacyNotificationCard(){
   document.querySelectorAll("#vm-notifications-card").forEach(el=>el.remove());
 }
@@ -149,27 +149,48 @@ function setupPrompt(){
     overlay.classList.add("vm-show");
     const accept=document.getElementById("vm-notification-accept");
     const later=document.getElementById("vm-notification-later");
-    accept.onclick=()=>activateNotifications(accept);
-    later.onclick=chooseLater;
+    if(accept) accept.onclick=()=>activateNotifications(accept);
+    if(later) later.onclick=chooseLater;
   };
 
-  if(welcome){
+  const waitForWelcomeToFinish=()=>{
+    const current=document.getElementById("vmWelcomeSplash");
+    if(!current){
+      setTimeout(showAfterWelcome,800);
+      return;
+    }
+
+    const hidden=getComputedStyle(current).display==="none" ||
+      getComputedStyle(current).visibility==="hidden" ||
+      current.classList.contains("vmWelcomeHide");
+
+    if(hidden){
+      setTimeout(showAfterWelcome,800);
+      return;
+    }
+
     const observer=new MutationObserver(()=>{
-      removeLegacyNotificationCard();
-      const current=document.getElementById("vmWelcomeSplash");
-      if(!current || getComputedStyle(current).display==="none" || current.classList.contains("vmWelcomeHide")){
+      const el=document.getElementById("vmWelcomeSplash");
+      if(!el){
         observer.disconnect();
-        /* Laisse le premier écran terminer complètement son animation avant d'afficher les notifications. */
-        setTimeout(showAfterWelcome,1200);
+        setTimeout(showAfterWelcome,800);
+        return;
+      }
+      const isHidden=getComputedStyle(el).display==="none" ||
+        getComputedStyle(el).visibility==="hidden" ||
+        el.classList.contains("vmWelcomeHide");
+      if(isHidden){
+        observer.disconnect();
+        setTimeout(showAfterWelcome,800);
       }
     });
+
     observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["class","style"]});
-    setTimeout(()=>{
-      if(!document.getElementById("vmWelcomeSplash")){observer.disconnect();showAfterWelcome();}
-    },15000);
-  }else{
-    setTimeout(showAfterWelcome,500);
-  }
+  };
+
+  /* Vérifie l'état immédiatement : si l'écran Bienvenue est déjà terminé,
+     on affiche directement le popup notifications au lieu d'attendre une mutation. */
+  setTimeout(waitForWelcomeToFinish,100);
 }
 
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",setupPrompt,{once:true});
