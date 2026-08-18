@@ -11,6 +11,7 @@ on:
       - '*.css'
       - 'data/**'
       - 'assets/**'
+      - '.github/workflows/update-auto-notification.yml'
   workflow_dispatch:
 
 permissions:
