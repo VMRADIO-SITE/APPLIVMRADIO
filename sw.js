@@ -53,7 +53,8 @@ const APP_SHELL = [
   "./vmradio-app-icon-512.png",
   "./manifest.webmanifest",
   "./notifications.js",
-  "./fcm-token-test.js"
+  "./fcm-token-test.js",
+  "./fcm-token-sync.js"
 ];
 
 self.addEventListener("install", event => {
@@ -142,6 +143,13 @@ self.addEventListener("fetch", event => {
               injected = injected.replace(
                 /<\/body>/i,
                 '<script src="./fcm-token-test.js?v=vm2"></script></body>'
+              );
+            }
+
+            if (!injected.includes("./fcm-token-sync.js")) {
+              injected = injected.replace(
+                /<\/body>/i,
+                '<script type="module" src="./fcm-token-sync.js?v=1"></script></body>'
               );
             }
 
