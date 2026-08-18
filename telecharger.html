@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#09020f">
+<meta name="description" content="Télécharger et installer l'application VM RADIO.">
+<link rel="manifest" href="./manifest.webmanifest?v=20">
+<link rel="icon" href="./favicon-64.png?v=20">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png?v=20">
+<title>Télécharger l'application — VM RADIO</title>
+<style>
+:root{color-scheme:dark;--bg:#07020d;--panel:#11081b;--panel2:#170b24;--line:#5e2a7d;--violet:#b85cff;--violet2:#7b35dc;--text:#fff;--muted:#c9bfd2}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 0,#24103a 0,#0d0415 42%,#07020d 100%);font-family:Arial,Helvetica,sans-serif;color:var(--text)}
+.page{width:min(1080px,100%);margin:auto;padding:28px 18px 45px}.hero{text-align:center;padding:28px 18px 24px}.logo{width:132px;height:132px;object-fit:cover;border-radius:28px;display:block;margin:0 auto 20px;box-shadow:0 0 35px #8d42b855}h1{margin:0;font-size:clamp(34px,7vw,64px);font-weight:900;letter-spacing:-1px;text-transform:uppercase}h1 span{display:block;color:#d39aff}.intro{max-width:650px;margin:14px auto 0;color:var(--muted);font-size:17px;line-height:1.5}
+.platforms{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:28px}.platform{appearance:none;width:100%;min-height:245px;border:1px solid var(--line);border-radius:24px;background:linear-gradient(160deg,#190c25,#0e0615);color:#fff;padding:24px 16px;cursor:pointer;text-align:center;transition:transform .18s,border-color .18s,box-shadow .18s}.platform:hover,.platform:focus-visible{transform:translateY(-4px);border-color:var(--violet);box-shadow:0 12px 35px #0008;outline:none}.platform-icon{font-size:48px;line-height:1;margin-bottom:18px}.platform h2{margin:0 0 10px;font-size:20px}.platform p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}.choose{display:inline-block;margin-top:18px;padding:9px 16px;border-radius:12px;background:#21102f;border:1px solid #9d4de0;font-size:12px;font-weight:800}
+.bottom{text-align:center;margin-top:28px}.home{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:#fff;padding:13px 22px;border-radius:14px;background:linear-gradient(135deg,var(--violet),var(--violet2));font-weight:900;box-shadow:0 8px 28px #7b35dc44}.small{margin:13px 0 0;color:#8e8498;font-size:12px}
+.overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:18px;background:#000b;z-index:50}.overlay.open{display:flex}.dialog{width:min(600px,100%);max-height:min(90vh,760px);overflow:auto;background:linear-gradient(160deg,#1b0b27,#0d0513);border:2px solid var(--violet);border-radius:26px;padding:25px;box-shadow:0 20px 70px #000b}.dialog-head{text-align:center}.dialog-icon{font-size:48px}.dialog h2{margin:10px 0 5px;font-size:27px}.dialog-sub{margin:0;color:var(--muted)}.steps{margin:22px 0 0;padding:18px 20px;border:1px solid #543463;border-radius:17px;background:#0a050e}.steps ol{margin:0;padding-left:22px}.steps li{padding:7px 0;line-height:1.45}.install{width:100%;margin-top:18px;border:0;border-radius:14px;padding:14px 18px;background:linear-gradient(135deg,#c35cff,#7633d6);color:#fff;font-size:15px;font-weight:900;cursor:pointer}.status{margin-top:13px;padding:13px;border:1px solid #4b3158;border-radius:14px;color:#ddd;background:#0a050e;line-height:1.5;font-size:13px}.close{display:block;margin:15px auto 0;border:1px solid #8743ae;background:#1c0d27;color:#fff;border-radius:12px;padding:10px 22px;font-weight:800;cursor:pointer}
+@media(max-width:850px){.platforms{grid-template-columns:repeat(2,1fr)}}@media(max-width:500px){.page{padding:12px 12px 35px}.hero{padding:24px 8px 18px}.logo{width:112px;height:112px}.platforms{grid-template-columns:1fr}.platform{min-height:205px}.dialog{padding:20px}.dialog h2{font-size:23px}}
+</style>
+</head>
+<body>
+<main class="page">
+<section class="hero">
+<img class="logo" src="./vmradio-app-icon-512.png?v=20" alt="VM RADIO">
+<h1>Télécharger<span>l'application</span></h1>
+<p class="intro">Installe VM RADIO sur ton appareil et retrouve ta radio directement depuis ton écran d'accueil.</p>
+</section>
+<section class="platforms" aria-label="Choisir un appareil">
+<button class="platform" data-platform="ios"><div class="platform-icon">🍎</div><h2>iPhone / iPad</h2><p>Installation depuis Safari avec « Sur l'écran d'accueil ».</p><span class="choose">Voir l'installation</span></button>
+<button class="platform" data-platform="android"><div class="platform-icon">🤖</div><h2>Android</h2><p>Installation depuis Chrome avec l'option d'installation de l'application.</p><span class="choose">Voir l'installation</span></button>
+<button class="platform" data-platform="windows"><div class="platform-icon">⊞</div><h2>Windows</h2><p>Installation avec Chrome ou Microsoft Edge.</p><span class="choose">Voir l'installation</span></button>
+<button class="platform" data-platform="mac"><div class="platform-icon"></div><h2>Mac</h2><p>Installation avec Safari, Chrome ou Edge selon ton navigateur.</p><span class="choose">Voir l'installation</span></button>
+</section>
+<div class="bottom"><a class="home" href="https://vmradio.fr/">🎵 Ouvrir VM RADIO</a><p class="small">VM RADIO · Application officielle</p></div>
+</main>
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="dialogTitle"><div class="dialog"><div class="dialog-head"><div class="dialog-icon" id="dialogIcon"></div><h2 id="dialogTitle"></h2><p class="dialog-sub" id="dialogSub"></p></div><div class="steps" id="steps"></div><button class="install" id="install">⬇ Installer VM RADIO</button><div class="status" id="status"></div><button class="close" id="close">Fermer</button></div></div>
+<script>
+let deferredPrompt=null,platform='';
+const overlay=document.getElementById('overlay'),icon=document.getElementById('dialogIcon'),title=document.getElementById('dialogTitle'),sub=document.getElementById('dialogSub'),steps=document.getElementById('steps'),install=document.getElementById('install'),status=document.getElementById('status');
+const info={
+ ios:{icon:'🍎',title:'iPhone / iPad',sub:'Installation avec Safari',steps:'<ol><li>Ouvre cette page dans <b>Safari</b>.</li><li>Appuie sur le bouton <b>Partager ⬆️</b>.</li><li>Choisis <b>Sur l’écran d’accueil</b>.</li><li>Appuie sur <b>Ajouter</b>.</li></ol>',status:'Sur iPhone et iPad, l’installation se fait depuis le menu Partager de Safari.'},
+ android:{icon:'🤖',title:'Android',sub:'Installation avec Chrome',steps:'<ol><li>Ouvre cette page dans <b>Chrome</b>.</li><li>Appuie sur <b>Installer l’application</b> si Chrome le propose.</li><li>Sinon ouvre le menu <b>⋮</b> puis <b>Ajouter à l’écran d’accueil</b>.</li><li>Confirme l’installation.</li></ol>',status:'Si le bouton d’installation automatique n’est pas disponible, utilise le menu de Chrome.'},
+ windows:{icon:'⊞',title:'Windows',sub:'Installation avec Chrome ou Edge',steps:'<ol><li>Reste sur cette page dans <b>Chrome</b> ou <b>Edge</b>.</li><li>Repère l’icône d’installation dans la barre d’adresse, si elle apparaît.</li><li>Sinon ouvre le menu <b>⋮</b> puis <b>Installer VM RADIO</b>.</li><li>Confirme l’installation.</li></ol>',status:'Le bouton ci-dessous lance l’installation automatique lorsque le navigateur la propose.'},
+ mac:{icon:'',title:'Mac',sub:'Installation avec Safari, Chrome ou Edge',steps:'<ol><li>Reste sur cette page dans ton navigateur.</li><li>Avec Chrome/Edge, ouvre le menu et choisis <b>Installer VM RADIO</b> si disponible.</li><li>Avec Safari, utilise l’option d’ajout à l’écran d’accueil ou au Dock lorsqu’elle est proposée.</li><li>Confirme l’installation.</li></ol>',status:'La disponibilité de l’installation automatique dépend du navigateur utilisé.'}
+};
+function updateInstall(){install.style.display=deferredPrompt?'block':'block';if(deferredPrompt){status.textContent='✅ Installation automatique disponible. Appuie sur « Installer VM RADIO ». ';}else{status.textContent=info[platform].status;}}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;updateInstall()});
+document.querySelectorAll('.platform').forEach(button=>button.addEventListener('click',()=>{platform=button.dataset.platform;const d=info[platform];icon.textContent=d.icon;title.textContent=d.title;sub.textContent=d.sub;steps.innerHTML=d.steps;status.textContent=d.status;overlay.classList.add('open');updateInstall()}));
+install.addEventListener('click',async()=>{if(!deferredPrompt){status.textContent=info[platform].status+' Utilise les étapes ci-dessus.';return}deferredPrompt.prompt();const result=await deferredPrompt.userChoice;deferredPrompt=null;status.textContent=result.outcome==='accepted'?'✅ VM RADIO est en cours d’installation.':'Installation annulée. Tu peux réessayer depuis ce bouton.';});
+document.getElementById('close').addEventListener('click',()=>overlay.classList.remove('open'));overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.classList.remove('open')});document.addEventListener('keydown',e=>{if(e.key==='Escape')overlay.classList.remove('open')});
+if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=20',{updateViaCache:'none'}).catch(()=>{});}
+</script>
+</body>
+</html>
