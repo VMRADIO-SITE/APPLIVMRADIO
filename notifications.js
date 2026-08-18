@@ -9,7 +9,13 @@ const firebaseConfig = {
 };
 
 const VAPID_KEY = "BNJ2HTuiALjnhLqWHI9RmK6PJsXVmrizzennfo_anzDJBBXgEdXzZy70hIpQao-hxRtylbSsquww8p05uRk1Sgk";
-const NOTICE_KEY = "vmRadioNotificationPromptShown";
+const NOTICE_KEY = "vmRadioNotificationPromptShownV2";
+
+/* Supprime l'ancien petit bloc injecté par l'ancien système de notifications. */
+function removeLegacyNotificationCard(){
+  document.querySelectorAll("#vm-notifications-card").forEach(el=>el.remove());
+}
+removeLegacyNotificationCard();
 
 const style = document.createElement("style");
 style.textContent = `
@@ -128,6 +134,7 @@ async function activateNotifications(btn){
 }
 
 function setupPrompt(){
+  removeLegacyNotificationCard();
   if(localStorage.getItem(NOTICE_KEY)==="1")return;
   if("Notification" in window && Notification.permission==="granted"){
     localStorage.setItem(NOTICE_KEY,"1");
@@ -148,6 +155,7 @@ function setupPrompt(){
 
   if(welcome){
     const observer=new MutationObserver(()=>{
+      removeLegacyNotificationCard();
       const current=document.getElementById("vmWelcomeSplash");
       if(!current || getComputedStyle(current).display==="none" || current.classList.contains("vmWelcomeHide")){
         observer.disconnect();
