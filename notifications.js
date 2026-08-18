@@ -10,6 +10,7 @@ const firebaseConfig={
 const VAPID_KEY="BNJ2HTuiALjnhLqWHI9RmK6PJsXVmrizzennfo_anzDJBBXgEdXzZy70hIpQao-hxRtylbSsquww8p05uRk1Sgk";
 const NOTICE_KEY="vmRadioNotificationPromptShownV4";
 const TOKEN_KEY="vmRadioFcmToken";
+const ACTIVATED_KEY="vmRadioNotificationsActivatedV1";
 let welcomeObserver=null;
 let messagingInstance=null;
 let foregroundBound=false;
@@ -39,6 +40,13 @@ html.vm-notification-blocking #vmWelcomeSplash,body.vm-notification-blocking #vm
 `;
 document.head.appendChild(style);
 
+function markActivated(){
+  localStorage.setItem(ACTIVATED_KEY,"1");
+  localStorage.setItem(NOTICE_KEY,"1");
+}
+function isActivated(){
+  return localStorage.getItem(ACTIVATED_KEY)==="1" || localStorage.getItem(NOTICE_KEY)==="1" || (window.Notification&&Notification.permission==="granted");
+}
 function lockWelcome(){
   document.documentElement.classList.add("vm-notification-blocking");
   document.body.classList.add("vm-notification-blocking");
@@ -83,7 +91,7 @@ async function setupMessaging(){
   ]);
   const app=initializeApp(firebaseConfig,"vmRadioNotifications");
   const messaging=getMessaging(app);
-  const registration=await navigator.serviceWorker.register("./sw.js?vm=12",{scope:"./"});
+  const registration=await navigator.serviceWorker.register("./sw.js?vm=13",{scope:"./"});
   const token=await getToken(messaging,{vapidKey:VAPID_KEY,serviceWorkerRegistration:registration});
   if(!token)throw new Error("Token FCM indisponible");
   localStorage.setItem(TOKEN_KEY,token);
@@ -94,10 +102,8 @@ async function setupMessaging(){
       const data=payload.data||{};
       const title=data.title||notification.title||"VM RADIO";
       const body=data.body||notification.body||"Une nouvelle information est disponible.";
-      if(document.visibilityState==="visible"){
-        if(typeof Notification!=="undefined"&&Notification.permission==="granted"){
-          try{new Notification(title,{body,icon:data.icon||notification.icon||"./vmradio-app-icon-192.png",tag:data.tag||"vm-radio",data:{url:data.url||"./"}})}catch(_){ }
-        }
+      if(document.visibilityState==="visible"&&typeof Notification!=="undefined"&&Notification.permission==="granted"){
+        try{new Notification(title,{body,icon:data.icon||notification.icon||"./vmradio-app-icon-192.png",tag:data.tag||"vm-radio",data:{url:data.url||"./"}})}catch(_){ }
       }
     });
     foregroundBound=true;
@@ -107,20 +113,19 @@ async function setupMessaging(){
 
 async function activateNotifications(btn){
   try{
-    btn.disabled=true;btn.querySelector("span").textContent="Activation…";
+    btn.disabled=true;
+    btn.querySelector("span").textContent="Activation…";
     if(!(window.Notification)||!("serviceWorker" in navigator))throw new Error("Notifications non disponibles");
     const permission=await Notification.requestPermission();
     if(permission!=="granted"){
-      btn.disabled=false;btn.querySelector("span").textContent="Activer";
       finishPrompt();
       return;
     }
     await setupMessaging();
-    localStorage.setItem(NOTICE_KEY,"1");
+    markActivated();
     finishPrompt();
   }catch(error){
     console.error("VM RADIO notifications:",error);
-    btn.disabled=false;btn.querySelector("span").textContent="Activer";
     finishPrompt();
   }
 }
@@ -128,18 +133,13 @@ async function activateNotifications(btn){
 async function ensureMessagingWhenAlreadyGranted(){
   if(!(window.Notification)&&!("serviceWorker" in navigator))return;
   if(Notification.permission!=="granted")return;
-  try{await setupMessaging();localStorage.setItem(NOTICE_KEY,"1");}catch(error){console.error("VM RADIO notifications init:",error)}
+  try{await setupMessaging();markActivated();}catch(error){console.error("VM RADIO notifications init:",error)}
 }
 
 function setupPrompt(){
   document.querySelectorAll("#vm-notifications-card").forEach(el=>el.remove());
-  if(localStorage.getItem(NOTICE_KEY)==="1"){
+  if(isActivated()){
     ensureMessagingWhenAlreadyGranted();
-    return;
-  }
-  if(window.Notification&&Notification.permission==="granted"){
-    ensureMessagingWhenAlreadyGranted();
-    localStorage.setItem(NOTICE_KEY,"1");
     return;
   }
   lockWelcome();
