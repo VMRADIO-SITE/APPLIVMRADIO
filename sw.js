@@ -12,28 +12,16 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
-const messaging = firebase.messaging();
+firebase.messaging();
 
-// Une seule méthode affiche les notifications Firebase en arrière-plan.
-// Le listener "push" manuel a été retiré pour éviter les doublons.
-messaging.onBackgroundMessage(payload => {
-  const data = payload.data || {};
-  const notification = payload.notification || {};
-  const title = data.title || notification.title || "VM RADIO";
-  const body = data.body || notification.body || "Une nouvelle information est disponible.";
-  const url = data.url || notification.click_action || "./";
+/*
+  IMPORTANT : aucune notification n'est créée manuellement ici.
+  Pour les messages envoyés depuis Firebase Console avec un payload
+  "notification", Firebase Messaging s'occupe lui-même de l'affichage
+  en arrière-plan. Ajouter showNotification() ici provoquerait des doublons.
+*/
 
-  return self.registration.showNotification(title, {
-    body,
-    icon: data.icon || notification.icon || "./vmradio-app-icon-192.png",
-    badge: data.badge || notification.badge || "./vmradio-app-icon-192.png",
-    tag: data.tag || "vm-radio",
-    renotify: false,
-    data: { url }
-  });
-});
-
-const CACHE_NAME = "vm-radio-app-v10";
+const CACHE_NAME = "vm-radio-app-v11";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -115,7 +103,7 @@ self.addEventListener("fetch", event => {
             if (!injected.includes("./notifications.js")) {
               injected = injected.replace(
                 /<\/body>/i,
-                '<script type="module" src="./notifications.js?v=vm10"></script></body>'
+                '<script type="module" src="./notifications.js?v=vm11"></script></body>'
               );
             }
 
