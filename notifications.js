@@ -13,37 +13,49 @@ const NOTICE_KEY = "vmRadioNotificationPromptShown";
 
 const style = document.createElement("style");
 style.textContent = `
-#vm-notification-overlay{position:fixed;inset:0;z-index:999998;background:rgba(0,0,0,.78);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .25s ease,visibility .25s ease;font-family:Arial,Helvetica,sans-serif}
+#vm-notification-overlay{position:fixed;inset:0;z-index:999998;background:rgba(0,0,0,.82);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .25s ease,visibility .25s ease;font-family:Arial,Helvetica,sans-serif}
 #vm-notification-overlay.vm-show{opacity:1;visibility:visible;pointer-events:auto}
-#vm-notification-prompt{position:relative;width:min(100%,650px);max-height:calc(100vh - 36px);overflow:auto;padding:28px;border:2px solid #b85cff;border-radius:26px;background:linear-gradient(145deg,#08040d 0%,#12051d 52%,#08040d 100%);box-shadow:0 0 35px rgba(151,48,255,.5),inset 0 0 30px rgba(151,48,255,.08);color:#fff;box-sizing:border-box}
-#vm-notification-prompt:before{content:"";position:absolute;inset:-2px;border-radius:26px;pointer-events:none;box-shadow:0 0 14px rgba(184,92,255,.85);opacity:.75}
-#vm-notification-prompt .vm-close{position:absolute;right:18px;top:16px;width:42px;height:42px;border:2px solid #a944ff;border-radius:50%;background:transparent;color:#c45cff;font-size:30px;line-height:34px;cursor:pointer}
-#vm-notification-prompt .vm-notification-layout{display:grid;grid-template-columns:minmax(180px,42%) 1fr;gap:28px;align-items:center}
-#vm-notification-prompt .vm-logo-placeholder{min-height:210px;border:2px solid #9c3dff;border-radius:25px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 45%,rgba(113,32,198,.2),rgba(0,0,0,.55) 65%);box-shadow:0 0 20px rgba(157,61,255,.4)}
-#vm-notification-prompt .vm-logo-placeholder img{width:86%;max-height:190px;object-fit:contain;border-radius:16px}
-#vm-notification-prompt h2{margin:0;font-size:clamp(32px,6vw,62px);line-height:.98;font-weight:900;letter-spacing:-1.5px}
-#vm-notification-prompt h2 span{color:#8b2cff;text-shadow:0 0 16px rgba(139,44,255,.5)}
-#vm-notification-prompt .vm-line{height:2px;margin:20px 0 22px;background:linear-gradient(90deg,#8b2cff,rgba(139,44,255,0))}
-#vm-notification-prompt .vm-text{margin:0;color:#d4ceda;font-size:clamp(15px,2.4vw,22px);line-height:1.45}
+#vm-notification-prompt{position:relative;width:min(100%,1360px);max-height:calc(100vh - 36px);overflow:auto;padding:54px 60px 52px;border:2px solid #b85cff;border-radius:34px;background:linear-gradient(145deg,#050308 0%,#0d0714 55%,#050308 100%);box-shadow:0 0 38px rgba(151,48,255,.55),inset 0 0 34px rgba(151,48,255,.07);color:#fff;box-sizing:border-box}
+#vm-notification-prompt:before{content:"";position:absolute;inset:-2px;border-radius:34px;pointer-events:none;box-shadow:0 0 18px rgba(184,92,255,.9);opacity:.78}
+#vm-notification-prompt .vm-close{position:absolute;right:38px;top:28px;width:62px;height:62px;border:2px solid #a944ff;border-radius:50%;background:transparent;color:#c45cff;font-size:48px;font-weight:300;line-height:52px;cursor:pointer;z-index:2}
+#vm-notification-prompt .vm-notification-layout{display:grid;grid-template-columns:minmax(430px,46%) 1fr;gap:58px;align-items:center}
+#vm-notification-prompt .vm-logo-placeholder{min-height:420px;border:2px solid #9c3dff;border-radius:34px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 45%,rgba(113,32,198,.22),rgba(0,0,0,.6) 68%);box-shadow:0 0 24px rgba(157,61,255,.45);overflow:hidden}
+#vm-notification-prompt .vm-logo-placeholder img{width:92%;max-height:390px;object-fit:contain;border-radius:18px}
+#vm-notification-prompt h2{margin:0;font-size:clamp(50px,5.6vw,92px);line-height:.98;font-weight:900;letter-spacing:-2px}
+#vm-notification-prompt h2 span{color:#7e22ff;text-shadow:0 0 18px rgba(139,44,255,.55)}
+#vm-notification-prompt .vm-line{height:3px;margin:30px 0 34px;background:linear-gradient(90deg,#8b2cff 0%,#8b2cff 48%,rgba(139,44,255,0) 100%);box-shadow:0 0 8px rgba(139,44,255,.6)}
+#vm-notification-prompt .vm-text{margin:0;color:#d4ceda;font-size:clamp(22px,2vw,34px);line-height:1.42}
 #vm-notification-prompt .vm-text span{color:#9c35ff}
-#vm-notification-prompt .vm-notification-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:26px}
-#vm-notification-prompt button.vm-choice{border-radius:17px;padding:16px 14px;color:#fff;font-weight:900;font-size:clamp(14px,2vw,18px);cursor:pointer;min-height:62px}
-#vm-notification-accept{border:0;background:linear-gradient(135deg,#c05cff,#6820e8);box-shadow:0 0 20px rgba(145,45,255,.45)}
-#vm-notification-later{background:rgba(5,3,9,.85);border:1px solid rgba(176,74,255,.55)}
+#vm-notification-prompt .vm-notification-actions{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:44px;padding:0 10px}
+#vm-notification-prompt button.vm-choice{border-radius:24px;padding:20px 24px;color:#fff;font-weight:800;font-size:clamp(22px,2vw,32px);cursor:pointer;min-height:100px;display:flex;align-items:center;justify-content:center;gap:22px}
+#vm-notification-accept{border:0;background:linear-gradient(135deg,#c05cff 0%,#6d20ed 100%);box-shadow:0 0 28px rgba(145,45,255,.5)}
+#vm-notification-later{background:rgba(5,3,9,.86);border:2px solid rgba(176,74,255,.58)}
 #vm-notification-prompt button.vm-choice:disabled{opacity:.55;cursor:wait}
-@media(max-width:600px){
-  #vm-notification-overlay{padding:12px}
-  #vm-notification-prompt{padding:22px 18px;border-radius:22px}
-  #vm-notification-prompt .vm-notification-layout{grid-template-columns:1fr;gap:18px}
-  #vm-notification-prompt .vm-logo-placeholder{min-height:150px}
-  #vm-notification-prompt .vm-logo-placeholder img{max-height:135px}
-  #vm-notification-prompt .vm-close{right:12px;top:10px;width:38px;height:38px;font-size:26px}
-  #vm-notification-prompt h2{padding-right:42px}
-  #vm-notification-prompt .vm-line{margin:14px 0 16px}
-  #vm-notification-prompt .vm-notification-actions{grid-template-columns:1fr;gap:9px}
+.vm-notification-icon-svg{width:42px;height:42px;display:block;flex:0 0 42px}
+@media(max-width:800px){
+  #vm-notification-overlay{padding:10px}
+  #vm-notification-prompt{padding:30px 22px 26px;border-radius:26px;max-height:calc(100vh - 20px)}
+  #vm-notification-prompt .vm-notification-layout{grid-template-columns:1fr;gap:22px}
+  #vm-notification-prompt .vm-logo-placeholder{min-height:230px;border-radius:25px}
+  #vm-notification-prompt .vm-logo-placeholder img{max-height:215px}
+  #vm-notification-prompt .vm-close{right:15px;top:13px;width:46px;height:46px;font-size:36px;line-height:39px}
+  #vm-notification-prompt h2{font-size:clamp(38px,12vw,62px);padding-right:46px}
+  #vm-notification-prompt .vm-line{margin:18px 0 20px}
+  #vm-notification-prompt .vm-text{font-size:clamp(17px,5vw,23px)}
+  #vm-notification-prompt .vm-notification-actions{grid-template-columns:1fr 1fr;gap:10px;margin-top:28px;padding:0}
+  #vm-notification-prompt button.vm-choice{min-height:68px;padding:12px 8px;border-radius:17px;font-size:clamp(15px,4vw,19px);gap:9px}
+  .vm-notification-icon-svg{width:28px;height:28px;flex-basis:28px}
+}
+@media(max-width:430px){
+  #vm-notification-prompt .vm-logo-placeholder{min-height:180px}
+  #vm-notification-prompt .vm-logo-placeholder img{max-height:165px}
+  #vm-notification-prompt .vm-notification-actions{grid-template-columns:1fr 1fr}
 }
 `;
 document.head.appendChild(style);
+
+const clockIcon=`<svg class="vm-notification-icon-svg" viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="32" r="25" stroke="currentColor" stroke-width="4"/><path d="M32 17v16l10 7" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const bellIcon=`<svg class="vm-notification-icon-svg" viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M18 28c0-9 6-15 14-15s14 6 14 15v10l6 8H12l6-8V28Z" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M26 51c1 4 3 6 6 6s5-2 6-6" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>`;
 
 function createPrompt(){
   if(document.getElementById("vm-notification-overlay")) return document.getElementById("vm-notification-overlay");
@@ -63,8 +75,8 @@ function createPrompt(){
         </div>
       </div>
       <div class="vm-notification-actions">
-        <button class="vm-choice" id="vm-notification-later" type="button">Plus tard</button>
-        <button class="vm-choice" id="vm-notification-accept" type="button">🔔 Activer</button>
+        <button class="vm-choice" id="vm-notification-later" type="button">${clockIcon}<span>Plus tard</span></button>
+        <button class="vm-choice" id="vm-notification-accept" type="button">${bellIcon}<span>Activer</span></button>
       </div>
     </section>`;
   document.body.appendChild(overlay);
@@ -86,7 +98,7 @@ function chooseLater(){
 async function activateNotifications(btn){
   try{
     btn.disabled=true;
-    btn.textContent="Activation…";
+    btn.querySelector("span").textContent="Activation…";
     if(!( "Notification" in window) || !("serviceWorker" in navigator)) throw new Error("Notifications non disponibles");
     const permission=await Notification.requestPermission();
     if(permission!=="granted"){
@@ -114,7 +126,7 @@ async function activateNotifications(btn){
   }catch(error){
     console.error("VM RADIO notifications:",error);
     btn.disabled=false;
-    btn.textContent="🔔 Activer";
+    btn.querySelector("span").textContent="Activer";
   }
 }
 
