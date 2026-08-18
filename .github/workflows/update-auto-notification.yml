@@ -1,0 +1,99 @@
+name: VM RADIO - Notification automatique mise à jour
+
+on:
+  push:
+    paths:
+      - 'index.html'
+      - 'sw.js'
+      - 'manifest.webmanifest'
+      - '*.html'
+      - '*.js'
+      - '*.css'
+      - 'data/**'
+      - 'assets/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notify-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Firebase Admin SDK
+        run: npm install --no-save firebase-admin@13
+
+      - name: Envoyer la notification FCM de mise à jour
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${FIREBASE_SERVICE_ACCOUNT_JSON:-}" ]; then
+            echo "Le secret FIREBASE_SERVICE_ACCOUNT_JSON n'est pas configuré."
+            exit 1
+          fi
+
+          node <<'NODE'
+          const admin = require('firebase-admin');
+
+          const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+          admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+
+          const db = admin.firestore();
+          const messaging = admin.messaging();
+          const title = 'Mise à jour disponible';
+          const body = 'Une nouvelle version de VM RADIO est disponible.';
+          const link = 'https://app.vmradio.fr/';
+
+          (async () => {
+            const snapshot = await db.collection('fcmTokens').get();
+            const tokens = snapshot.docs
+              .map(doc => String(doc.get('token') || '').trim())
+              .filter(Boolean);
+
+            console.log(`Tokens FCM trouvés : ${tokens.length}`);
+            if (!tokens.length) {
+              console.log('Aucun appareil enregistré. Rien à envoyer.');
+              return;
+            }
+
+            for (let i = 0; i < tokens.length; i += 500) {
+              const batch = tokens.slice(i, i + 500);
+              const response = await messaging.sendEachForMulticast({
+                tokens: batch,
+                notification: { title, body },
+                data: {
+                  title,
+                  body,
+                  url: link,
+                  type: 'app-update',
+                  tag: 'vm-radio-mise-a-jour'
+                },
+                webpush: {
+                  fcmOptions: { link }
+                }
+              });
+
+              console.log(`Lot ${Math.floor(i / 500) + 1}: ${response.successCount} succès, ${response.failureCount} échecs.`);
+
+              for (let j = 0; j < response.responses.length; j++) {
+                const result = response.responses[j];
+                if (!result.success) {
+                  const code = result.error?.code || '';
+                  if (code.includes('registration-token-not-registered') || code.includes('invalid-registration-token')) {
+                    const token = batch[j];
+                    const stale = snapshot.docs.find(doc => doc.get('token') === token);
+                    if (stale) await stale.ref.delete();
+                  }
+                }
+              }
+            }
+          })().catch(error => {
+            console.error(error);
+            process.exitCode = 1;
+          });
+          NODE
