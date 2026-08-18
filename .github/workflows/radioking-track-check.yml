@@ -6,7 +6,7 @@ on:
     - cron: '*/5 * * * *'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: radioking-track-check
@@ -16,6 +16,9 @@ jobs:
   check-track:
     runs-on: ubuntu-latest
     steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
       - name: Récupérer le titre RadioKing
         shell: bash
         run: |
@@ -60,13 +63,49 @@ jobs:
 
           if [ "$CURRENT_ID" = "$LAST_ID" ]; then
             echo "new_track=false" >> "$GITHUB_OUTPUT"
-            echo "⏭️ Même titre qu'au dernier passage : aucune nouvelle notification."
+            echo "⏭️ Même titre qu'au dernier passage : aucune nouvelle publication."
           else
             echo "new_track=true" >> "$GITHUB_OUTPUT"
             echo "🎵 Nouveau titre détecté !"
           fi
 
           printf '%s' "$CURRENT_ID" > .radioking-state/last_track_id.txt
+
+      - name: Préparer les données Infos en temps réel
+        if: steps.detect.outputs.new_track == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const d = require('./track.json');
+          const out = {
+            id: d.id ?? '',
+            title: d.title ?? '',
+            artist: d.artist ?? '',
+            started_at: d.started_at ?? null,
+            end_at: d.end_at ?? null,
+            cover: d.cover ?? d.cover_url ?? d.image ?? '',
+            updated_at: new Date().toISOString()
+          };
+          fs.mkdirSync('data', { recursive: true });
+          fs.writeFileSync('data/radioking-latest.json', JSON.stringify(out, null, 2) + '\n');
+          NODE
+
+      - name: Publier dans Infos en temps réel
+        if: steps.detect.outputs.new_track == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'VM RADIO Bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/radioking-latest.json
+          if git diff --cached --quiet; then
+            echo 'Aucune modification à publier.'
+            exit 0
+          fi
+          git commit -m 'Mise à jour Infos en temps réel - RadioKing'
+          git push
 
       - name: Mémoriser le titre pour les prochaines exécutions
         if: always()
@@ -77,4 +116,4 @@ jobs:
 
       - name: Résultat
         if: steps.detect.outputs.new_track == 'true'
-        run: echo "🔔 Ce nouveau titre pourra maintenant être transmis à Infos en temps réel puis à FCM."
+        run: echo '🔔 Nouveau titre publié dans Infos en temps réel. FCM sera branché ensuite.'
