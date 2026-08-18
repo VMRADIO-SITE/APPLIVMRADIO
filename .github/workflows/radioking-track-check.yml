@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: radioking-track-check
+  cancel-in-progress: true
+
 jobs:
   check-track:
     runs-on: ubuntu-latest
@@ -19,16 +23,58 @@ jobs:
           curl -fsSL 'https://api.radioking.io/widget/radio/vm-radio2/track/current' -o track.json
           cat track.json
 
-      - name: Afficher les informations du titre
+      - name: Restaurer le dernier titre connu
+        uses: actions/cache/restore@v4
+        with:
+          path: .radioking-state
+          key: radioking-state-${{ github.run_id }}
+          restore-keys: |
+            radioking-state-
+
+      - name: Détecter le changement de titre
+        id: detect
         shell: bash
         run: |
           set -euo pipefail
-          node <<'NODE'
-          const fs = require('fs');
-          const data = JSON.parse(fs.readFileSync('track.json', 'utf8'));
-          console.log('RadioKing ID :', data.id ?? '(inconnu)');
-          console.log('Artiste      :', data.artist ?? '(inconnu)');
-          console.log('Titre        :', data.title ?? '(inconnu)');
-          console.log('Début        :', data.started_at ?? '(inconnu)');
-          console.log('Fin          :', data.end_at ?? '(inconnu)');
-          NODE
+          mkdir -p .radioking-state
+
+          CURRENT_ID="$(node -e "const d=require('./track.json'); process.stdout.write(String(d.id ?? ''))")"
+          CURRENT_ARTIST="$(node -e "const d=require('./track.json'); process.stdout.write(String(d.artist ?? ''))")"
+          CURRENT_TITLE="$(node -e "const d=require('./track.json'); process.stdout.write(String(d.title ?? ''))")"
+
+          LAST_ID=""
+          if [ -f .radioking-state/last_track_id.txt ]; then
+            LAST_ID="$(cat .radioking-state/last_track_id.txt)"
+          fi
+
+          echo "Dernier ID connu : ${LAST_ID:-aucun}"
+          echo "ID actuel       : ${CURRENT_ID:-inconnu}"
+          echo "Artiste         : ${CURRENT_ARTIST:-inconnu}"
+          echo "Titre           : ${CURRENT_TITLE:-inconnu}"
+
+          if [ -z "$CURRENT_ID" ]; then
+            echo "new_track=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ Aucun ID RadioKing reçu. Aucun déclenchement."
+            exit 0
+          fi
+
+          if [ "$CURRENT_ID" = "$LAST_ID" ]; then
+            echo "new_track=false" >> "$GITHUB_OUTPUT"
+            echo "⏭️ Même titre qu'au dernier passage : aucune nouvelle notification."
+          else
+            echo "new_track=true" >> "$GITHUB_OUTPUT"
+            echo "🎵 Nouveau titre détecté !"
+          fi
+
+          printf '%s' "$CURRENT_ID" > .radioking-state/last_track_id.txt
+
+      - name: Mémoriser le titre pour les prochaines exécutions
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .radioking-state
+          key: radioking-state-${{ github.run_id }}
+
+      - name: Résultat
+        if: steps.detect.outputs.new_track == 'true'
+        run: echo "🔔 Ce nouveau titre pourra maintenant être transmis à Infos en temps réel puis à FCM."
