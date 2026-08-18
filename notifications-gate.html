@@ -9,7 +9,8 @@
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%;background:#050308;color:#fff;font-family:Arial,Helvetica,sans-serif}
 body{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:18px}
-.gate{width:min(100%,1360px);padding:54px 60px 52px;border:2px solid #b85cff;border-radius:34px;background:linear-gradient(145deg,#050308,#0d0714 55%,#050308);box-shadow:0 0 38px rgba(151,48,255,.55),inset 0 0 34px rgba(151,48,255,.07)}
+.gate{width:min(100%,1360px);padding:54px 60px 52px;border:2px solid #b85cff;border-radius:34px;background:linear-gradient(145deg,#050308,#0d0714 55%,#050308);box-shadow:0 0 38px rgba(151,48,255,.55),inset 0 0 34px rgba(151,48,255,.07);transition:opacity .18s ease,transform .18s ease}
+.gate.closing{opacity:0;transform:scale(.98);pointer-events:none}
 .layout{display:grid;grid-template-columns:minmax(260px,34%) 1fr;gap:50px;align-items:center}
 .logo{width:min(100%,200px);aspect-ratio:1;margin:auto;padding:8px;border:2px solid #9c3dff;border-radius:24px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 45%,rgba(113,32,198,.14),rgba(0,0,0,.82) 72%);box-shadow:0 0 18px rgba(157,61,255,.36),inset 0 0 18px rgba(157,61,255,.08);overflow:hidden}
 .logo img{display:block;width:100%;height:100%;object-fit:contain;object-position:center;border-radius:16px;filter:drop-shadow(0 0 10px rgba(170,75,255,.28))}
@@ -40,9 +41,9 @@ button{min-height:68px;padding:12px 8px;border-radius:17px;font-size:clamp(15px,
 </style>
 </head>
 <body>
-<main class="gate">
+<main class="gate" id="notificationGate">
 <div class="layout">
-<div class="logo"><img src="./vmradio-app-logo.png?v=14" alt="VM RADIO"></div>
+<div class="logo"><img src="./vmradio-app-logo.png?v=15" alt="VM RADIO"></div>
 <div>
 <h1>Restez<br><span>informé</span> !</h1>
 <div class="line"></div>
@@ -59,9 +60,31 @@ import {initializeApp} from "https://www.gstatic.com/firebasejs/12.17.1/firebase
 import {getMessaging,getToken} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-messaging.js";
 const firebaseConfig={apiKey:"AIzaSyB0LSbKdAAEfLg48c4DJO2hdyvjx0TySko",authDomain:"vm-radio-notifications.firebaseapp.com",projectId:"vm-radio-notifications",storageBucket:"vm-radio-notifications.firebasestorage.app",messagingSenderId:"573483400068",appId:"1:573483400068:web:5e3b80a9ac49dc284ebbd1",measurementId:"G-ZJPS49DKG3"};
 const VAPID_KEY="BNJ2HTuiALjnhLqWHI9RmK6PJsXVmrizzennfo_anzDJBBXgEdXzZy70hIpQao-hxRtylbSsquww8p05uRk1Sgk";
+const gate=document.getElementById("notificationGate");
+const closeGate=()=>{gate.classList.add("closing");setTimeout(()=>gate.remove(),180)};
 const go=()=>{localStorage.setItem("vmRadioNotificationPromptShownV4","1");location.replace("./index.html?notifications=done")};
-document.getElementById("later").onclick=go;
-document.getElementById("accept").onclick=async()=>{const b=document.getElementById("accept");try{b.disabled=true;b.lastChild.textContent="Activation…";if(!(window.Notification)||!("serviceWorker" in navigator))throw new Error("Notifications indisponibles");const p=await Notification.requestPermission();if(p!=="granted"){b.disabled=false;b.lastChild.textContent="Activer";return}const app=initializeApp(firebaseConfig,"vmRadioNotificationsGate");const messaging=getMessaging(app);const reg=await navigator.serviceWorker.register("./sw.js?vm=10",{scope:"./"});const token=await getToken(messaging,{vapidKey:VAPID_KEY,serviceWorkerRegistration:reg});if(!token)throw new Error("Token FCM indisponible");localStorage.setItem("vmRadioFcmToken",token);go()}catch(e){console.error(e);b.disabled=false;b.lastChild.textContent="Activer"}};
+
+document.getElementById("later").onclick=()=>{closeGate();setTimeout(go,180)};
+
+document.getElementById("accept").onclick=async()=>{
+  const b=document.getElementById("accept");
+  try{
+    b.disabled=true;
+    closeGate();
+    if(!(window.Notification)||!("serviceWorker" in navigator))throw new Error("Notifications indisponibles");
+    const p=await Notification.requestPermission();
+    if(p!=="granted"){go();return}
+    const app=initializeApp(firebaseConfig,"vmRadioNotificationsGate");
+    const messaging=getMessaging(app);
+    const reg=await navigator.serviceWorker.register("./sw.js?vm=11",{scope:"./"});
+    const token=await getToken(messaging,{vapidKey:VAPID_KEY,serviceWorkerRegistration:reg});
+    if(token)localStorage.setItem("vmRadioFcmToken",token);
+    go();
+  }catch(e){
+    console.error(e);
+    go();
+  }
+};
 </script>
 </body>
 </html>
