@@ -45,11 +45,27 @@ jobs:
 
           const db = admin.firestore();
           const messaging = admin.messaging();
-          const title = 'Mise à jour disponible';
-          const body = 'Une nouvelle version de VM RADIO est disponible.';
-          const link = 'https://app.vmradio.fr/';
+
+          const DEFAULT_TITLE = 'Mise à jour disponible';
+          const DEFAULT_BODY = 'Une nouvelle version de VM RADIO est disponible.';
+          const DEFAULT_LINK = 'https://app.vmradio.fr/';
 
           (async () => {
+            const configRef = db.collection('notificationSettings').doc('update');
+            const configSnapshot = await configRef.get();
+            const config = configSnapshot.exists ? configSnapshot.data() : {};
+
+            if (config.enabled === false) {
+              console.log('Notification de mise à jour désactivée dans Firestore.');
+              return;
+            }
+
+            const title = String(config.title || DEFAULT_TITLE).trim() || DEFAULT_TITLE;
+            const body = String(config.body || DEFAULT_BODY).trim() || DEFAULT_BODY;
+            const link = String(config.url || DEFAULT_LINK).trim() || DEFAULT_LINK;
+
+            console.log(`Notification configurée : ${title}`);
+
             const snapshot = await db.collection('fcmTokens').get();
             const tokens = snapshot.docs
               .map(doc => String(doc.get('token') || '').trim())
