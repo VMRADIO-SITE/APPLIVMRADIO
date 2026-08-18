@@ -11,6 +11,7 @@ const VAPID_KEY="BNJ2HTuiALjnhLqWHI9RmK6PJsXVmrizzennfo_anzDJBBXgEdXzZy70hIpQao-
 const NOTICE_KEY="vmRadioNotificationPromptShownV4";
 const TOKEN_KEY="vmRadioFcmToken";
 const ACTIVATED_KEY="vmRadioNotificationsActivatedV1";
+const ERROR_KEY="vmRadioNotificationsLastErrorV1";
 let welcomeObserver=null;
 let messagingInstance=null;
 let foregroundBound=false;
@@ -39,6 +40,8 @@ html.vm-notification-blocking #vmWelcomeSplash,body.vm-notification-blocking #vm
 #vm-fcm-token-tool{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:2147483646;width:min(92vw,520px);padding:16px 18px;border:2px solid #a43dff;border-radius:18px;background:rgba(8,4,15,.96);box-shadow:0 0 25px rgba(145,45,255,.55);color:#fff;font:700 16px Arial,sans-serif;text-align:center}
 #vm-fcm-token-tool button{margin-top:10px;width:100%;border:0;border-radius:12px;padding:12px;background:linear-gradient(135deg,#c05cff,#6d20ed);color:#fff;font:800 16px Arial,sans-serif;cursor:pointer}
 #vm-fcm-token-tool small{display:block;margin-top:8px;color:#cfc6d8;font-weight:400;line-height:1.35}
+#vm-fcm-token-tool.vm-error{border-color:#ff5c9a;box-shadow:0 0 25px rgba(255,92,154,.3)}
+#vm-fcm-token-tool.vm-error button{background:#32162d}
 @media(max-width:800px){#vm-notification-overlay{padding:10px}#vm-notification-prompt{padding:30px 22px 26px;border-radius:26px;max-height:calc(100vh - 20px)}#vm-notification-prompt .vm-notification-layout{grid-template-columns:1fr;gap:16px}#vm-notification-prompt .vm-logo-placeholder{width:150px;max-width:150px;aspect-ratio:1;padding:6px;border-radius:20px}#vm-notification-prompt h2{font-size:clamp(38px,12vw,62px)}#vm-notification-prompt .vm-line{margin:18px 0 20px}#vm-notification-prompt .vm-text{font-size:clamp(17px,5vw,23px)}#vm-notification-prompt .vm-notification-actions{grid-template-columns:1fr 1fr;gap:10px;margin-top:28px;padding:0}#vm-notification-prompt button.vm-choice{min-height:68px;padding:12px 8px;border-radius:17px;font-size:clamp(15px,4vw,19px);gap:9px}.vm-notification-icon-svg{width:28px;height:28px;flex-basis:28px}}
 `;
 document.head.appendChild(style);
@@ -72,7 +75,7 @@ const bellIcon=`<svg class="vm-notification-icon-svg" viewBox="0 0 64 64" fill="
 function createPrompt(){
   let overlay=document.getElementById("vm-notification-overlay");if(overlay)return overlay;
   overlay=document.createElement("div");overlay.id="vm-notification-overlay";
-  overlay.innerHTML=`<section id="vm-notification-prompt" role="dialog" aria-modal="true" aria-label="Notifications VM RADIO"><div class="vm-notification-layout"><div class="vm-logo-placeholder"><img src="./vmradio-app-logo.png?v=14" alt="VM RADIO"></div><div><h2>Restez<br><span>informé</span> !</h2><div class="vm-line"></div><p class="vm-text">Activez les notifications pour ne rien manquer de nos <span>nouveautés</span>, <span>informations</span> et <span>mises à jour</span> sur <span>VM Radio</span>.</p></div></div><div class="vm-notification-actions"><button class="vm-choice" id="vm-notification-later" type="button">${clockIcon}<span>Plus tard</span></button><button class="vm-choice" id="vm-notification-accept" type="button">${bellIcon}<span>Activer</span></button></div></section>`;
+  overlay.innerHTML=`<section id="vm-notification-prompt" role="dialog" aria-modal="true" aria-label="Notifications VM RADIO"><div class="vm-notification-layout"><div class="vm-logo-placeholder"><img src="./vmradio-app-logo.png?v=15" alt="VM RADIO"></div><div><h2>Restez<br><span>informé</span> !</h2><div class="vm-line"></div><p class="vm-text">Activez les notifications pour ne rien manquer de nos <span>nouveautés</span>, <span>informations</span> et <span>mises à jour</span> sur <span>VM Radio</span>.</p></div></div><div class="vm-notification-actions"><button class="vm-choice" id="vm-notification-later" type="button">${clockIcon}<span>Plus tard</span></button><button class="vm-choice" id="vm-notification-accept" type="button">${bellIcon}<span>Activer</span></button></div></section>`;
   document.body.appendChild(overlay);return overlay;
 }
 
@@ -85,14 +88,19 @@ function closePrompt(){
 function finishPrompt(){closePrompt();setTimeout(unlockWelcome,350)}
 function chooseLater(){finishPrompt();}
 
-function showTokenTool(token){
-  if(!token)return;
+function showTokenTool(token,errorMessage){
   const old=document.getElementById("vm-fcm-token-tool");if(old)old.remove();
   const box=document.createElement("div");box.id="vm-fcm-token-tool";
-  box.innerHTML=`<div>✅ Notifications activées</div><small>Le token FCM de cet appareil est prêt pour le test Firebase.</small><button type="button" id="vm-copy-fcm-token">Copier mon token FCM</button>`;
+  if(token){
+    box.innerHTML=`<div>✅ Notifications activées</div><small>Le token FCM de cet appareil est prêt pour le test Firebase.</small><button type="button" id="vm-copy-fcm-token">Copier mon token FCM</button>`;
+  }else{
+    box.classList.add("vm-error");
+    const safeError=String(errorMessage||"Erreur inconnue").replace(/[<>]/g,"");
+    box.innerHTML=`<div>⚠️ Notifications activées, mais token FCM indisponible</div><small>${safeError}<br>Ouvre la console du navigateur pour voir l'erreur complète.</small><button type="button" id="vm-close-fcm-error">Fermer</button>`;
+  }
   document.body.appendChild(box);
   const btn=box.querySelector("#vm-copy-fcm-token");
-  btn.onclick=async()=>{
+  if(btn)btn.onclick=async()=>{
     try{
       await navigator.clipboard.writeText(token);
       btn.textContent="Token copié ✅";
@@ -102,6 +110,8 @@ function showTokenTool(token){
       console.log("VM RADIO FCM TOKEN:",token);
     }
   };
+  const close=box.querySelector("#vm-close-fcm-error");
+  if(close)close.onclick=()=>box.remove();
 }
 
 async function setupMessaging(){
@@ -113,10 +123,11 @@ async function setupMessaging(){
   ]);
   const app=initializeApp(firebaseConfig,"vmRadioNotifications");
   const messaging=getMessaging(app);
-  const registration=await navigator.serviceWorker.register("./sw.js?vm=14",{scope:"./"});
+  const registration=await navigator.serviceWorker.register("./sw.js?vm=15",{scope:"./"});
   const token=await getToken(messaging,{vapidKey:VAPID_KEY,serviceWorkerRegistration:registration});
   if(!token)throw new Error("Token FCM indisponible");
   localStorage.setItem(TOKEN_KEY,token);
+  localStorage.removeItem(ERROR_KEY);
   messagingInstance=messaging;
   if(!foregroundBound){
     onMessage(messaging,payload=>{
@@ -147,17 +158,29 @@ async function activateNotifications(btn){
     markActivated();
     finishPrompt();
     const token=localStorage.getItem(TOKEN_KEY);
-    setTimeout(()=>showTokenTool(token),450);
+    setTimeout(()=>showTokenTool(token,"Token FCM introuvable après activation."),450);
   }catch(error){
     console.error("VM RADIO notifications:",error);
+    localStorage.setItem(ERROR_KEY,String(error&&error.message||error));
+    markActivated();
     finishPrompt();
+    setTimeout(()=>showTokenTool(localStorage.getItem(TOKEN_KEY),String(error&&error.message||error)),450);
   }
 }
 
 async function ensureMessagingWhenAlreadyGranted(){
   if(!(window.Notification)&&!("serviceWorker" in navigator))return;
   if(Notification.permission!=="granted")return;
-  try{await setupMessaging();markActivated();}catch(error){console.error("VM RADIO notifications init:",error)}
+  try{
+    await setupMessaging();
+    markActivated();
+    const token=localStorage.getItem(TOKEN_KEY);
+    setTimeout(()=>showTokenTool(token,"Token FCM introuvable après l'initialisation."),450);
+  }catch(error){
+    console.error("VM RADIO notifications init:",error);
+    localStorage.setItem(ERROR_KEY,String(error&&error.message||error));
+    showTokenTool(localStorage.getItem(TOKEN_KEY),String(error&&error.message||error));
+  }
 }
 
 function setupPrompt(){
