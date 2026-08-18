@@ -14,6 +14,46 @@
     return d.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
   }
 
+  function installFrameStyle() {
+    if (document.getElementById('vm-radioking-live-frame-style')) return;
+    const style = document.createElement('style');
+    style.id = 'vm-radioking-live-frame-style';
+    style.textContent = `
+      #${MARKER}{
+        position:relative;
+        overflow:hidden;
+        margin:18px 0 20px;
+        padding:16px;
+        border:1px solid rgba(184,92,255,.72);
+        border-radius:16px;
+        background:linear-gradient(145deg,rgba(24,13,37,.98),rgba(8,7,14,.98));
+        box-shadow:0 0 0 1px rgba(184,92,255,.10),0 0 22px rgba(121,44,188,.18),inset 0 1px rgba(255,255,255,.04);
+      }
+      #${MARKER}::before{
+        content:"";
+        position:absolute;
+        left:0;right:0;top:0;height:2px;
+        background:linear-gradient(90deg,transparent,#b85cff,#e39aff,transparent);
+      }
+      #${MARKER} .vmrk-badge{display:flex;align-items:center;gap:7px;color:#d68cff;font-size:11px;font-weight:800;letter-spacing:.5px;margin-bottom:12px}
+      #${MARKER} .vmrk-badge span{width:7px;height:7px;border-radius:50%;background:#31d17b;box-shadow:0 0 8px #31d17b;flex:0 0 7px}
+      #${MARKER} .vmrk-main{display:flex;align-items:center;gap:12px}
+      #${MARKER} .vmrk-cover{width:68px;height:68px;flex:0 0 68px;border-radius:10px;object-fit:cover;border:1px solid #6d2a95;background:#0b0711;box-shadow:0 0 12px rgba(121,44,188,.18)}
+      #${MARKER} .vmrk-info{min-width:0}
+      #${MARKER} .vmrk-label{font-size:10px;color:#aaa5b4;margin-bottom:3px}
+      #${MARKER} .vmrk-title{font-size:17px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
+      #${MARKER} .vmrk-artist{font-size:11px;color:#b85cff;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      #${MARKER} .vmrk-date{font-size:9px;color:#777080;margin-top:7px}
+      #${MARKER} .vmrk-empty{text-align:center;color:#aaa5b4;font-size:10px;padding:8px}
+      @media(max-width:700px){
+        #${MARKER}{margin:14px 0 16px;padding:13px;border-radius:15px}
+        #${MARKER} .vmrk-title{font-size:14px}
+        #${MARKER} .vmrk-cover{width:58px;height:58px;flex-basis:58px}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   async function refresh() {
     const root = document.getElementById(MARKER);
     if (!root) return;
@@ -47,6 +87,7 @@
   function start() {
     const root = document.getElementById(MARKER);
     if (!root) return;
+    installFrameStyle();
     refresh();
     setInterval(refresh, POLL_MS);
   }
