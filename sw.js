@@ -24,14 +24,14 @@ messaging.onBackgroundMessage(payload => {
   return self.registration.showNotification(title, {
     body,
     icon: data.icon || notification.icon || "./vmradio-app-icon-192.png",
-    badge: data.badge || "./vmradio-app-icon-192.png",
+    badge: data.badge || notification.badge || "./vmradio-app-icon-192.png",
     tag: data.tag || "vm-radio",
     renotify: true,
     data: { url }
   });
 });
 
-const CACHE_NAME = "vm-radio-app-v6";
+const CACHE_NAME = "vm-radio-app-v7";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -42,7 +42,8 @@ const APP_SHELL = [
   "./vm-radio-home-logo.png",
   "./vmradio-app-icon-192.png",
   "./vmradio-app-icon-512.png",
-  "./manifest.webmanifest"
+  "./manifest.webmanifest",
+  "./notifications.js"
 ];
 
 self.addEventListener("install", event => {
@@ -68,8 +69,7 @@ self.addEventListener("message", event => {
 });
 
 self.addEventListener("push", event => {
-  // Firebase Messaging handles FCM payloads. For generic Web Push payloads,
-  // keep a small fallback so the service worker can still display them.
+  // Firebase Messaging handles FCM payloads. Generic Web Push fallback.
   if (event.data) {
     let data = {};
     try {
@@ -124,12 +124,34 @@ self.addEventListener("fetch", event => {
   if (/radio|stream|audio/i.test(url.pathname)) return;
 
   event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        if (response && response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+    fetch(event.request, { cache: "no-store" })
+      .then(async response => {
+        if (!response || !response.ok) return response;
+
+        // Garantit que notifications.js est chargé même si l'index actuel
+        // n'a pas encore été modifié pour inclure le module.
+        if (url.pathname.endsWith("/index.html") || url.pathname === "/") {
+          const type = response.headers.get("content-type") || "";
+          if (type.includes("text/html")) {
+            const html = await response.text();
+            if (!html.includes("./notifications.js")) {
+              const injected = html.replace(
+                /<\/body>/i,
+                '<script type="module" src="./notifications.js?v=vm7"></script></body>'
+              );
+              const headers = new Headers(response.headers);
+              headers.delete("content-length");
+              return new Response(injected, {
+                status: response.status,
+                statusText: response.statusText,
+                headers
+              });
+            }
+          }
         }
+
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
         return response;
       })
       .catch(() => caches.match(event.request).then(cached => cached || caches.match("./index.html")))
