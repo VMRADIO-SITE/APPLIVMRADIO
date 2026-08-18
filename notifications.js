@@ -9,7 +9,7 @@ const firebaseConfig = {
 };
 
 const VAPID_KEY = "BNJ2HTuiALjnhLqWHI9RmK6PJsXVmrizzennfo_anzDJBBXgEdXzZy70hIpQao-hxRtylbSsquww8p05uRk1Sgk";
-/* Nouvelle clé pour forcer l'affichage de cette nouvelle version du popup. */
+/* Cette clé est enregistrée uniquement après « Activer ». */
 const NOTICE_KEY = "vmRadioNotificationPromptShownV3";
 
 function removeLegacyNotificationCard(){
@@ -93,8 +93,9 @@ function closePrompt(){
   setTimeout(()=>overlay.remove(),250);
 }
 
+/* « Plus tard » ferme uniquement cette fois-ci.
+   Aucun choix n'est mémorisé : le popup réapparaîtra au prochain lancement. */
 function chooseLater(){
-  localStorage.setItem(NOTICE_KEY,"1");
   closePrompt();
 }
 
@@ -105,7 +106,8 @@ async function activateNotifications(btn){
     if(!( "Notification" in window) || !("serviceWorker" in navigator)) throw new Error("Notifications non disponibles");
     const permission=await Notification.requestPermission();
     if(permission!=="granted"){
-      chooseLater();
+      btn.disabled=false;
+      btn.querySelector("span").textContent="Activer";
       return;
     }
     const [{initializeApp},{getMessaging,getToken,onMessage}]=await Promise.all([
@@ -141,7 +143,6 @@ function setupPrompt(){
     return;
   }
 
-  const welcome=document.getElementById("vmWelcomeSplash");
   const overlay=createPrompt();
 
   const showAfterWelcome=()=>{
@@ -188,8 +189,6 @@ function setupPrompt(){
     observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["class","style"]});
   };
 
-  /* Vérifie l'état immédiatement : si l'écran Bienvenue est déjà terminé,
-     on affiche directement le popup notifications au lieu d'attendre une mutation. */
   setTimeout(waitForWelcomeToFinish,100);
 }
 
