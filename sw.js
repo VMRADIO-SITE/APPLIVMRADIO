@@ -31,7 +31,7 @@ messaging.onBackgroundMessage(payload => {
   });
 });
 
-const CACHE_NAME = "vm-radio-app-v8";
+const CACHE_NAME = "vm-radio-app-v9";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -133,33 +133,15 @@ self.addEventListener("fetch", event => {
             const html = await response.text();
             let injected = html;
 
-            // Place the notification card directly inside the real welcome popup.
-            if (!injected.includes("vm-notifications-card")) {
-              const notificationCard = `
-                <section id="vm-notifications-card" style="margin:22px auto 0;width:min(92%,420px);padding:14px;border:1px solid rgba(184,92,255,.45);border-radius:18px;background:linear-gradient(145deg,rgba(35,17,51,.98),rgba(13,9,19,.98));box-shadow:0 8px 24px rgba(0,0,0,.25);color:#fff;text-align:left;">
-                  <div style="display:flex;align-items:center;gap:11px;">
-                    <div style="width:40px;height:40px;flex:0 0 40px;border-radius:13px;display:grid;place-items:center;background:#28143a;font-size:20px;">🔔</div>
-                    <div style="min-width:0;flex:1;">
-                      <strong style="display:block;font-size:13px;">Notifications VM RADIO</strong>
-                      <small id="vm-notifications-status" style="display:block;margin-top:3px;color:#aaa5b4;font-size:9px;line-height:1.35;">Active les notifications pour recevoir les infos, nouveaux titres et mises à jour.</small>
-                    </div>
-                  </div>
-                  <button id="vm-notifications-button" type="button" style="width:100%;margin-top:11px;border:0;border-radius:12px;padding:11px;background:linear-gradient(135deg,#c05cff,#7433dd);color:#fff;font-weight:800;font-size:11px;cursor:pointer;">Activer les notifications</button>
-                </section>`;
-
-              if (/<div class="vmWelcomeTitle">/i.test(injected)) {
-                injected = injected.replace(
-                  /(<div class="vmWelcomeTitle">[\s\S]*?<\/div>)/i,
-                  `$1${notificationCard}`
-                );
-              }
-            }
-
-            // Ensure the notification module is loaded after the popup markup exists.
+            /*
+              Le nouveau popup est géré exclusivement par notifications.js.
+              L'ancien bloc "Notifications VM RADIO" n'est plus injecté ici.
+              Cela évite qu'un ancien modèle apparaisse puis disparaisse.
+            */
             if (!injected.includes("./notifications.js")) {
               injected = injected.replace(
                 /<\/body>/i,
-                '<script type="module" src="./notifications.js?v=vm8"></script></body>'
+                '<script type="module" src="./notifications.js?v=vm9"></script></body>'
               );
             }
 
