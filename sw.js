@@ -14,6 +14,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
+// Une seule méthode affiche les notifications Firebase en arrière-plan.
+// Le listener "push" manuel a été retiré pour éviter les doublons.
 messaging.onBackgroundMessage(payload => {
   const data = payload.data || {};
   const notification = payload.notification || {};
@@ -26,12 +28,12 @@ messaging.onBackgroundMessage(payload => {
     icon: data.icon || notification.icon || "./vmradio-app-icon-192.png",
     badge: data.badge || notification.badge || "./vmradio-app-icon-192.png",
     tag: data.tag || "vm-radio",
-    renotify: true,
+    renotify: false,
     data: { url }
   });
 });
 
-const CACHE_NAME = "vm-radio-app-v9";
+const CACHE_NAME = "vm-radio-app-v10";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -66,29 +68,6 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("message", event => {
   if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
-});
-
-self.addEventListener("push", event => {
-  if (event.data) {
-    let data = {};
-    try {
-      data = event.data.json();
-    } catch (_) {
-      data = { body: event.data.text() };
-    }
-
-    if (!data.from || data.from !== "firebase") {
-      const title = data.title || "VM RADIO";
-      event.waitUntil(self.registration.showNotification(title, {
-        body: data.body || "Une nouvelle information est disponible.",
-        icon: data.icon || "./vmradio-app-icon-192.png",
-        badge: data.badge || "./vmradio-app-icon-192.png",
-        tag: data.tag || "vm-radio",
-        renotify: true,
-        data: { url: data.url || "./" }
-      }));
-    }
-  }
 });
 
 self.addEventListener("notificationclick", event => {
@@ -133,15 +112,10 @@ self.addEventListener("fetch", event => {
             const html = await response.text();
             let injected = html;
 
-            /*
-              Le nouveau popup est géré exclusivement par notifications.js.
-              L'ancien bloc "Notifications VM RADIO" n'est plus injecté ici.
-              Cela évite qu'un ancien modèle apparaisse puis disparaisse.
-            */
             if (!injected.includes("./notifications.js")) {
               injected = injected.replace(
                 /<\/body>/i,
-                '<script type="module" src="./notifications.js?v=vm9"></script></body>'
+                '<script type="module" src="./notifications.js?v=vm10"></script></body>'
               );
             }
 
