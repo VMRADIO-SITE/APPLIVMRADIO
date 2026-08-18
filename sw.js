@@ -21,7 +21,7 @@ firebase.messaging();
   en arrière-plan. Ajouter showNotification() ici provoquerait des doublons.
 */
 
-const CACHE_NAME = "vm-radio-app-v11";
+const CACHE_NAME = "vm-radio-app-v12";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -33,7 +33,8 @@ const APP_SHELL = [
   "./vmradio-app-icon-192.png",
   "./vmradio-app-icon-512.png",
   "./manifest.webmanifest",
-  "./notifications.js"
+  "./notifications.js",
+  "./fcm-token-test.js"
 ];
 
 self.addEventListener("install", event => {
@@ -103,7 +104,14 @@ self.addEventListener("fetch", event => {
             if (!injected.includes("./notifications.js")) {
               injected = injected.replace(
                 /<\/body>/i,
-                '<script type="module" src="./notifications.js?v=vm11"></script></body>'
+                '<script type="module" src="./notifications.js?v=vm19"></script></body>'
+              );
+            }
+
+            if (!injected.includes("./fcm-token-test.js")) {
+              injected = injected.replace(
+                /<\/body>/i,
+                '<script src="./fcm-token-test.js?v=vm1"></script></body>'
               );
             }
 
