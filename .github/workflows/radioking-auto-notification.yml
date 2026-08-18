@@ -40,7 +40,10 @@ jobs:
           const db = admin.firestore();
           const messaging = admin.messaging();
           const track = JSON.parse(fs.readFileSync('data/radioking-latest.json', 'utf8'));
-          const title = String(track.title || 'Nouvelle Musique').trim();
+          const rawTitle = String(track.title || 'Nouvelle Musique').trim();
+          const title = rawTitle
+            ? rawTitle.charAt(0).toLocaleUpperCase('fr-FR') + rawTitle.slice(1)
+            : 'Nouvelle Musique';
           const artist = String(track.artist || '').trim();
           const body = artist
             ? `${title} — ${artist} est maintenant disponible sur VM RADIO !`
