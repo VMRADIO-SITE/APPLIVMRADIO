@@ -19,12 +19,19 @@ jobs:
       - name: Récupérer le dépôt
         uses: actions/checkout@v4
 
-      - name: Récupérer le titre RadioKing
+      - name: Récupérer le titre RadioKing en cours
         shell: bash
         run: |
           set -euo pipefail
           curl -fsSL 'https://api.radioking.io/widget/radio/vm-radio2/track/current' -o track.json
           cat track.json
+
+      - name: Récupérer le titre RadioKing À suivre
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL 'https://api.radioking.io/widget/radio/vm-radio2/track/next?limit=1' -o next.json
+          cat next.json
 
       - name: Restaurer le dernier titre connu
         uses: actions/cache/restore@v4
@@ -41,19 +48,30 @@ jobs:
           set -euo pipefail
           mkdir -p .radioking-state
 
-          CURRENT_ID="$(node -e "const d=require('./track.json'); process.stdout.write(String(d.id ?? ''))")"
-          CURRENT_ARTIST="$(node -e "const d=require('./track.json'); process.stdout.write(String(d.artist ?? ''))")"
-          CURRENT_TITLE="$(node -e "const d=require('./track.json'); process.stdout.write(String(d.title ?? ''))")"
+          CURRENT_ID="$(node -e "const d=require('./track.json'); const x=Array.isArray(d)?d[0]:(d.track||d.data?.track||d); process.stdout.write(String(x?.id ?? x?.track_id ?? x?.title ?? ''))")"
+          CURRENT_ARTIST="$(node -e "const d=require('./track.json'); const x=Array.isArray(d)?d[0]:(d.track||d.data?.track||d); process.stdout.write(String(x?.artist ?? ''))")"
+          CURRENT_TITLE="$(node -e "const d=require('./track.json'); const x=Array.isArray(d)?d[0]:(d.track||d.data?.track||d); process.stdout.write(String(x?.title ?? x?.name ?? ''))")"
+
+          NEXT_ID="$(node -e "const d=require('./next.json'); const x=Array.isArray(d)?d[0]:(d.track||d.data?.track||d); process.stdout.write(String(x?.id ?? x?.track_id ?? x?.title ?? ''))")"
+          NEXT_ARTIST="$(node -e "const d=require('./next.json'); const x=Array.isArray(d)?d[0]:(d.track||d.data?.track||d); process.stdout.write(String(x?.artist ?? ''))")"
+          NEXT_TITLE="$(node -e "const d=require('./next.json'); const x=Array.isArray(d)?d[0]:(d.track||d.data?.track||d); process.stdout.write(String(x?.title ?? x?.name ?? ''))")"
 
           LAST_ID=""
           if [ -f .radioking-state/last_track_id.txt ]; then
             LAST_ID="$(cat .radioking-state/last_track_id.txt)"
           fi
 
+          LAST_NEXT_ID=""
+          if [ -f .radioking-state/last_next_track_id.txt ]; then
+            LAST_NEXT_ID="$(cat .radioking-state/last_next_track_id.txt)"
+          fi
+
           echo "Dernier ID connu : ${LAST_ID:-aucun}"
           echo "ID actuel       : ${CURRENT_ID:-inconnu}"
           echo "Artiste         : ${CURRENT_ARTIST:-inconnu}"
           echo "Titre           : ${CURRENT_TITLE:-inconnu}"
+          echo "ID À suivre     : ${NEXT_ID:-inconnu}"
+          echo "À suivre        : ${NEXT_TITLE:-inconnu} — ${NEXT_ARTIST:-inconnu}"
 
           if [ -z "$CURRENT_ID" ]; then
             echo "new_track=false" >> "$GITHUB_OUTPUT"
@@ -66,10 +84,15 @@ jobs:
             echo "⏭️ Même titre qu'au dernier passage : aucune nouvelle publication."
           else
             echo "new_track=true" >> "$GITHUB_OUTPUT"
-            echo "🎵 Nouveau titre détecté !"
+            if [ -n "$LAST_NEXT_ID" ] && [ "$CURRENT_ID" = "$LAST_NEXT_ID" ]; then
+              echo "🎵 Le titre précédemment À suivre est maintenant en cours."
+            else
+              echo "🎵 Nouveau titre détecté !"
+            fi
           fi
 
           printf '%s' "$CURRENT_ID" > .radioking-state/last_track_id.txt
+          printf '%s' "$NEXT_ID" > .radioking-state/last_next_track_id.txt
 
       - name: Préparer les données Infos en temps réel
         if: steps.detect.outputs.new_track == 'true'
@@ -79,13 +102,14 @@ jobs:
           node <<'NODE'
           const fs = require('fs');
           const d = require('./track.json');
+          const x = Array.isArray(d) ? d[0] : (d.track || d.data?.track || d);
           const out = {
-            id: d.id ?? '',
-            title: d.title ?? '',
-            artist: d.artist ?? '',
-            started_at: d.started_at ?? null,
-            end_at: d.end_at ?? null,
-            cover: d.cover ?? d.cover_url ?? d.image ?? '',
+            id: x?.id ?? x?.track_id ?? '',
+            title: x?.title ?? x?.name ?? '',
+            artist: x?.artist ?? '',
+            started_at: x?.started_at ?? null,
+            end_at: x?.end_at ?? null,
+            cover: x?.cover ?? x?.cover_url ?? x?.image ?? '',
             updated_at: new Date().toISOString()
           };
           fs.mkdirSync('data', { recursive: true });
@@ -116,4 +140,4 @@ jobs:
 
       - name: Résultat
         if: steps.detect.outputs.new_track == 'true'
-        run: echo '🔔 Nouveau titre publié dans Infos en temps réel. FCM sera branché ensuite.'
+        run: echo '🔔 Nouveau titre publié dans Infos en temps réel. FCM sera déclenché après la publication.'
