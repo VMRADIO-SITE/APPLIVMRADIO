@@ -2433,6 +2433,69 @@ if(coverEl)new MutationObserver(syncNowPlaying).observe(coverEl,{attributes:true
 syncNowPlaying();
 })();
 </script>
+
+<script id="vm-update-popup-fix">
+(function(){
+  "use strict";
+
+  const VERSION_URL = "version.json";
+  const VERSION_KEY = "vmradio-last-version";
+  const CURRENT_KEY = "vmradio-current-version";
+
+  function showUpdatePopup(version){
+    if(document.getElementById("vm-update-popup")) return;
+
+    const style=document.createElement("style");
+    style.textContent=
+      "#vm-update-popup{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.72);backdrop-filter:blur(7px)}"+
+      "#vm-update-popup .box{width:min(100%,390px);padding:22px;border:1px solid rgba(184,92,255,.45);border-radius:22px;background:#120c1a;color:#fff;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.45)}"+
+      "#vm-update-popup h2{margin:0 0 8px;font-size:20px}"+
+      "#vm-update-popup p{margin:0 0 17px;color:#bcb3c7;font-size:13px;line-height:1.45}"+
+      "#vm-update-popup button{border:0;border-radius:13px;padding:12px 20px;background:linear-gradient(135deg,#c05cff,#7433dd);color:#fff;font-weight:800;font-size:13px}";
+    document.head.appendChild(style);
+
+    const popup=document.createElement("div");
+    popup.id="vm-update-popup";
+    popup.innerHTML='<div class="box"><h2>Nouvelle mise à jour disponible</h2><p>Une nouvelle version de VM RADIO est disponible.</p><button id="vm-update-reload">Mettre à jour</button></div>';
+    document.body.appendChild(popup);
+
+    document.getElementById("vm-update-reload").addEventListener("click",function(){
+      try{localStorage.setItem(VERSION_KEY,version);}catch(e){}
+      location.reload();
+    });
+  }
+
+  async function checkVersion(){
+    try{
+      const response=await fetch(VERSION_URL+"?t="+Date.now(),{cache:"no-store"});
+      if(!response.ok) return;
+      const data=await response.json();
+      const version=String(data.version||data.currentVersion||"").trim();
+      if(!version) return;
+
+      let last="";
+      try{last=localStorage.getItem(VERSION_KEY)||"";}catch(e){}
+
+      if(!last){
+        try{localStorage.setItem(VERSION_KEY,version);}catch(e){}
+        return;
+      }
+
+      if(version!==last) showUpdatePopup(version);
+    }catch(e){
+      console.warn("VM RADIO — vérification de mise à jour impossible",e);
+    }
+  }
+
+  // Vérification au chargement et à chaque retour sur le site.
+  checkVersion();
+  document.addEventListener("visibilitychange",function(){
+    if(document.visibilityState==="visible") checkVersion();
+  });
+  window.addEventListener("pageshow",checkVersion);
+})();
+</script>
+
 </body>
 </body>
 </html>
