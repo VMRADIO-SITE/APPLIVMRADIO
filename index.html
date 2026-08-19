@@ -2439,60 +2439,65 @@ syncNowPlaying();
   "use strict";
 
   const VERSION_URL = "version.json";
-  const VERSION_KEY = "vmradio-last-version";
-  const CURRENT_KEY = "vmradio-current-version";
+  const VERSION_KEY = "vmradio-installed-version";
 
-  function showUpdatePopup(version){
+  function popup(version){
     if(document.getElementById("vm-update-popup")) return;
 
-    const style=document.createElement("style");
-    style.textContent=
-      "#vm-update-popup{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.72);backdrop-filter:blur(7px)}"+
-      "#vm-update-popup .box{width:min(100%,390px);padding:22px;border:1px solid rgba(184,92,255,.45);border-radius:22px;background:#120c1a;color:#fff;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.45)}"+
+    const s=document.createElement("style");
+    s.textContent=
+      "#vm-update-popup{position:fixed;inset:0;z-index:999999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.72);backdrop-filter:blur(8px)}"+
+      "#vm-update-popup .vm-update-box{width:min(100%,390px);padding:22px;border:1px solid rgba(184,92,255,.5);border-radius:22px;background:#120c1a;color:#fff;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)}"+
       "#vm-update-popup h2{margin:0 0 8px;font-size:20px}"+
       "#vm-update-popup p{margin:0 0 17px;color:#bcb3c7;font-size:13px;line-height:1.45}"+
       "#vm-update-popup button{border:0;border-radius:13px;padding:12px 20px;background:linear-gradient(135deg,#c05cff,#7433dd);color:#fff;font-weight:800;font-size:13px}";
-    document.head.appendChild(style);
+    document.head.appendChild(s);
 
-    const popup=document.createElement("div");
-    popup.id="vm-update-popup";
-    popup.innerHTML='<div class="box"><h2>Nouvelle mise à jour disponible</h2><p>Une nouvelle version de VM RADIO est disponible.</p><button id="vm-update-reload">Mettre à jour</button></div>';
-    document.body.appendChild(popup);
+    const p=document.createElement("div");
+    p.id="vm-update-popup";
+    p.innerHTML='<div class="vm-update-box"><h2>Nouvelle mise à jour disponible</h2><p>Une nouvelle version de VM RADIO est disponible.</p><button>Mettre à jour</button></div>';
+    document.body.appendChild(p);
 
-    document.getElementById("vm-update-reload").addEventListener("click",function(){
+    p.querySelector("button").onclick=function(){
       try{localStorage.setItem(VERSION_KEY,version);}catch(e){}
-      location.reload();
-    });
+      const url=new URL(location.href);
+      url.searchParams.set("update",Date.now());
+      location.replace(url.toString());
+    };
   }
 
-  async function checkVersion(){
+  async function check(){
     try{
-      const response=await fetch(VERSION_URL+"?t="+Date.now(),{cache:"no-store"});
-      if(!response.ok) return;
-      const data=await response.json();
-      const version=String(data.version||data.currentVersion||"").trim();
-      if(!version) return;
+      const r=await fetch(VERSION_URL+"?cacheBust="+Date.now(),{
+        cache:"no-store",
+        headers:{"Cache-Control":"no-cache"}
+      });
+      if(!r.ok)return;
 
-      let last="";
-      try{last=localStorage.getItem(VERSION_KEY)||"";}catch(e){}
+      const d=await r.json();
+      const v=String(d.version||"").trim();
+      if(!v)return;
 
-      if(!last){
-        try{localStorage.setItem(VERSION_KEY,version);}catch(e){}
+      let installed=null;
+      try{installed=localStorage.getItem(VERSION_KEY);}catch(e){}
+
+      // Première installation : mémorise la version sans afficher de faux popup.
+      if(!installed){
+        try{localStorage.setItem(VERSION_KEY,v);}catch(e){}
         return;
       }
 
-      if(version!==last) showUpdatePopup(version);
+      if(installed!==v) popup(v);
     }catch(e){
-      console.warn("VM RADIO — vérification de mise à jour impossible",e);
+      console.warn("VM RADIO — vérification mise à jour:",e);
     }
   }
 
-  // Vérification au chargement et à chaque retour sur le site.
-  checkVersion();
+  check();
   document.addEventListener("visibilitychange",function(){
-    if(document.visibilityState==="visible") checkVersion();
+    if(document.visibilityState==="visible") check();
   });
-  window.addEventListener("pageshow",checkVersion);
+  window.addEventListener("pageshow",check);
 })();
 </script>
 
