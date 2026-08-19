@@ -3,7 +3,8 @@ name: RadioKing - Détection du titre en cours
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/5 * * * *'
+    # Toutes les 5 minutes, décalé de 2 minutes pour éviter le pic de charge au début de l'heure.
+    - cron: '2-59/5 * * * *'
 
 permissions:
   contents: write
