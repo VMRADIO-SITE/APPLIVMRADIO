@@ -1,17 +1,9 @@
 name: VM RADIO - Notification automatique mise à jour
 
 on:
-  push:
-    paths:
-      - 'index.html'
-      - 'sw.js'
-      - 'manifest.webmanifest'
-      - '*.html'
-      - '*.js'
-      - '*.css'
-      - 'data/**'
-      - 'assets/**'
-      - '.github/workflows/update-auto-notification.yml'
+  workflow_run:
+    workflows: ["pages-build-deployment"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -19,10 +11,28 @@ permissions:
 
 jobs:
   notify-update:
+    # IMPORTANT : aucune notification si le déploiement GitHub Pages a échoué.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Récupérer le dépôt
         uses: actions/checkout@v4
+
+      - name: Vérifier que la version publiée est accessible
+        if: ${{ github.event_name == 'workflow_run' }}
+        run: |
+          set -euo pipefail
+          echo "Attente de la publication de VM RADIO..."
+          for i in {1..12}; do
+            if curl -fsS --max-time 10 "https://app.vmradio.fr/version.json?check=$(date +%s)" >/dev/null; then
+              echo "Version publiée accessible."
+              exit 0
+            fi
+            echo "Publication pas encore accessible, nouvelle vérification..."
+            sleep 10
+          done
+          echo "La version publiée n'est pas accessible après attente."
+          exit 1
 
       - name: Installer Firebase Admin SDK
         run: npm install --no-save firebase-admin@13
@@ -40,7 +50,6 @@ jobs:
 
           node <<'NODE'
           const admin = require('firebase-admin');
-
           const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
           admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 
@@ -65,18 +74,13 @@ jobs:
             const body = String(config.body || DEFAULT_BODY).trim() || DEFAULT_BODY;
             const link = String(config.url || DEFAULT_LINK).trim() || DEFAULT_LINK;
 
-            console.log(`Notification configurée : ${title}`);
-
             const snapshot = await db.collection('fcmTokens').get();
             const tokens = snapshot.docs
               .map(doc => String(doc.get('token') || '').trim())
               .filter(Boolean);
 
             console.log(`Tokens FCM trouvés : ${tokens.length}`);
-            if (!tokens.length) {
-              console.log('Aucun appareil enregistré. Rien à envoyer.');
-              return;
-            }
+            if (!tokens.length) return;
 
             for (let i = 0; i < tokens.length; i += 500) {
               const batch = tokens.slice(i, i + 500);
@@ -90,9 +94,7 @@ jobs:
                   type: 'app-update',
                   tag: 'vm-radio-mise-a-jour'
                 },
-                webpush: {
-                  fcmOptions: { link }
-                }
+                webpush: { fcmOptions: { link } }
               });
 
               console.log(`Lot ${Math.floor(i / 500) + 1}: ${response.successCount} succès, ${response.failureCount} échecs.`);
@@ -102,8 +104,7 @@ jobs:
                 if (!result.success) {
                   const code = result.error?.code || '';
                   if (code.includes('registration-token-not-registered') || code.includes('invalid-registration-token')) {
-                    const token = batch[j];
-                    const stale = snapshot.docs.find(doc => doc.get('token') === token);
+                    const stale = snapshot.docs.find(doc => doc.get('token') === batch[j]);
                     if (stale) await stale.ref.delete();
                   }
                 }
