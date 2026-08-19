@@ -30,8 +30,8 @@ messaging.onBackgroundMessage(payload => {
   self.registration.showNotification(title, { body, icon, badge: icon, tag, data: { url: link } });
 });
 
-// v20 : suppression du panneau de test FCM.
-const CACHE_NAME = "vm-radio-app-v20";
+// v21 : blocage du zoom tactile sur l'application mobile.
+const CACHE_NAME = "vm-radio-app-v21";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -131,8 +131,14 @@ self.addEventListener("fetch", event => {
             const html = await response.text();
             let injected = html;
 
+            // Empêche le pincement pour zoomer et le double-tap zoom sur mobile.
+            injected = injected.replace(/<meta[^>]+name=["']viewport["'][^>]*>/i, '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">');
+            if (!injected.includes("vm-radio-no-pinch-zoom")) {
+              injected = injected.replace(/<\/head>/i, '<style id="vm-radio-no-pinch-zoom">html,body{touch-action:pan-x pan-y pinch-zoom;overscroll-behavior-x:none}body{touch-action:pan-x pan-y; -webkit-text-size-adjust:100%}button,a,input,select,textarea{touch-action:manipulation}</style></head>');
+            }
+
             if (!injected.includes("./notifications.js")) {
-              injected = injected.replace(/<\/body>/i, '<script type="module" src="./notifications.js?v=vm20"></script></body>');
+              injected = injected.replace(/<\/body>/i, '<script type="module" src="./notifications.js?v=vm21"></script></body>');
             }
             if (!injected.includes("./fcm-token-sync.js")) {
               injected = injected.replace(/<\/body>/i, '<script type="module" src="./fcm-token-sync.js?v=1"></script></body>');
