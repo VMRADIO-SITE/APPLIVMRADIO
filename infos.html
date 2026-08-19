@@ -1385,6 +1385,9 @@ img,video,iframe{max-width:100%;height:auto}
   width:min(100%,520px) !important;
 }
 
+
+/* VM RADIO — formulaire de contact */
+.contact-card{margin-top:18px;background:linear-gradient(145deg,rgba(17,12,27,.94),rgba(7,7,12,.97));border:1px solid #39254d;border-radius:15px;padding:17px}.contact-card h2{margin:0 0 7px;font-size:17px;color:#d076ff}.contact-card .contact-subtitle{margin:0 0 16px;color:#aaa5b4;font-size:11px;line-height:1.5}.contact-form{display:flex;flex-direction:column;gap:10px}.contact-form label{color:#d8d0df;font-size:10px;font-weight:700}.contact-form input,.contact-form textarea{width:100%;border:1px solid #36253f;border-radius:10px;background:#09080f;color:#fff;padding:10px;font:inherit;font-size:11px;outline:none}.contact-form input:focus,.contact-form textarea:focus{border-color:#9a45e8;box-shadow:0 0 0 2px rgba(154,69,232,.12)}.contact-form textarea{min-height:120px;resize:vertical}.contact-form button{border:1px solid #9a45e8;border-radius:10px;background:linear-gradient(180deg,#8e35e5,#6723ad);color:#fff;padding:11px 14px;font-size:11px;font-weight:800;cursor:pointer}.contact-form button:active{transform:scale(.98)}.contact-help{margin:0;color:#777080;font-size:9px;line-height:1.4}@media(max-width:700px){.contact-card{padding:14px}.contact-form textarea{min-height:105px}}
 </style>
 <style id="vm-global-dedication-style">
 .vm-global-dedication-banner{
@@ -1702,6 +1705,23 @@ body{padding-top:36px!important}
 </article>
 </section>
 
+<section class="contact-card" id="contact">
+  <h2>📩 NOUS CONTACTER</h2>
+  <p class="contact-subtitle">Une question, une suggestion ou un problème avec VM RADIO ? Envoyez-nous votre message.</p>
+  <form class="contact-form" id="contactForm">
+    <label for="contactName">Nom / prénom</label>
+    <input id="contactName" name="name" type="text" autocomplete="name" placeholder="Votre nom ou prénom" required>
+    <label for="contactEmail">Adresse e-mail</label>
+    <input id="contactEmail" name="email" type="email" autocomplete="email" placeholder="vous@exemple.fr" required>
+    <label for="contactSubject">Sujet</label>
+    <input id="contactSubject" name="subject" type="text" placeholder="Sujet de votre message" required>
+    <label for="contactMessage">Message</label>
+    <textarea id="contactMessage" name="message" placeholder="Votre message..." required></textarea>
+    <button type="submit">✉️ ENVOYER LE MESSAGE</button>
+    <p class="contact-help">Le bouton prépare votre e-mail à destination de contact@vmradio.fr.</p>
+  </form>
+</section>
+
 <footer class="app-footer">
   <div class="app-footer-brand">VM RADIO</div>
   <div class="app-footer-powered">Appli propulsée par <strong>Music IA By Valentin</strong></div>
@@ -1925,5 +1945,21 @@ window.addEventListener("resize",function(){
 <section id="vm-radioking-live-info" aria-label="Infos en temps réel">
   <div class="vmrk-empty">Chargement des informations en temps réel…</div>
 </section>
+<script id="vm-contact-form">
+(function(){
+  const form=document.getElementById("contactForm");
+  if(!form)return;
+  form.addEventListener("submit",function(e){
+    e.preventDefault();
+    const name=(document.getElementById("contactName")?.value||"").trim();
+    const email=(document.getElementById("contactEmail")?.value||"").trim();
+    const subject=(document.getElementById("contactSubject")?.value||"").trim();
+    const message=(document.getElementById("contactMessage")?.value||"").trim();
+    if(!name||!email||!subject||!message)return;
+    const body="Nom / prénom : "+name+"\nAdresse e-mail : "+email+"\n\n"+message;
+    window.location.href="mailto:contact@vmradio.fr?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body);
+  });
+})();
+</script>
 <script src="./radioking-infos.js"></script>
 </body></html>
