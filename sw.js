@@ -30,8 +30,8 @@ messaging.onBackgroundMessage(payload => {
   self.registration.showNotification(title, { body, icon, badge: icon, tag, data: { url: link } });
 });
 
-// v19 : chargement du module audio de récupération.
-const CACHE_NAME = "vm-radio-app-v19";
+// v20 : suppression du panneau de test FCM.
+const CACHE_NAME = "vm-radio-app-v20";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -44,7 +44,6 @@ const APP_SHELL = [
   "./vmradio-app-icon-512.png",
   "./manifest.webmanifest",
   "./notifications.js",
-  "./fcm-token-test.js",
   "./fcm-token-sync.js",
   "./audio-recovery.js"
 ];
@@ -135,9 +134,6 @@ self.addEventListener("fetch", event => {
             if (!injected.includes("./notifications.js")) {
               injected = injected.replace(/<\/body>/i, '<script type="module" src="./notifications.js?v=vm20"></script></body>');
             }
-            if (!injected.includes("./fcm-token-test.js")) {
-              injected = injected.replace(/<\/body>/i, '<script src="./fcm-token-test.js?v=vm2"></script></body>');
-            }
             if (!injected.includes("./fcm-token-sync.js")) {
               injected = injected.replace(/<\/body>/i, '<script type="module" src="./fcm-token-sync.js?v=1"></script></body>');
             }
@@ -171,46 +167,16 @@ let updatePending=false;
 async function showUpdate(reg){
   if(updatePending)return;
   updatePending=true;
-
   if("Notification" in window && Notification.permission==="granted"){
-    try{
-      await reg.showNotification("🔔 Mise à jour disponible",{
-        body:"Une nouvelle version de VM RADIO est disponible.",
-        icon:"./vmradio-app-icon-192.png",
-        badge:"./vmradio-app-icon-192.png",
-        tag:"vm-radio-update",
-        renotify:true,
-        data:{type:"vm-radio-update"},
-        actions:[
-          {action:"update",title:"Mettre à jour"},
-          {action:"later",title:"Plus tard"}
-        ]
-      });
-    }catch(e){console.warn("Notification de mise à jour indisponible",e);}
+    try{await reg.showNotification("🔔 Mise à jour disponible",{body:"Une nouvelle version de VM RADIO est disponible.",icon:"./vmradio-app-icon-192.png",badge:"./vmradio-app-icon-192.png",tag:"vm-radio-update",renotify:true,data:{type:"vm-radio-update"},actions:[{action:"update",title:"Mettre à jour"},{action:"later",title:"Plus tard"}]});}catch(e){console.warn("Notification de mise à jour indisponible",e);}
   }
-
-  const n=document.createElement("div");
-  n.id="vm-radio-update-notice";
-  n.setAttribute("role","status");
-  n.innerHTML='<div class="vm-update-card"><div class="vm-update-title">🔔 Nouvelle mise à jour</div><div class="vm-update-text">Une nouvelle version de VM RADIO est disponible.</div><div class="vm-update-actions"><button id="vm-update-now">Mettre à jour</button><button id="vm-update-later">Plus tard</button></div></div>';
-  const s=document.createElement("style");
-  s.textContent='#vm-radio-update-notice{position:fixed;inset:auto 16px 16px;z-index:2147483646;display:flex;justify-content:center;font-family:Arial,Helvetica,sans-serif}.vm-update-card{width:min(100%,520px);padding:22px;border:2px solid #b85cff;border-radius:24px;background:linear-gradient(145deg,#050308,#0d0714);box-shadow:0 0 30px rgba(151,48,255,.5);color:#fff}.vm-update-title{font-size:22px;font-weight:900}.vm-update-text{margin:10px 0 18px;color:#d4ceda;line-height:1.4}.vm-update-actions{display:flex;gap:10px}.vm-update-actions button{flex:1;border-radius:14px;padding:13px;border:0;font-weight:800;cursor:pointer}.vm-update-actions button:first-child{background:linear-gradient(135deg,#c05cff,#6d20ed);color:#fff}.vm-update-actions button:last-child{background:#120d18;color:#fff;border:1px solid #8b2cff}';
-  document.head.appendChild(s);document.body.appendChild(n);
+  const n=document.createElement("div");n.id="vm-radio-update-notice";n.setAttribute("role","status");n.innerHTML='<div class="vm-update-card"><div class="vm-update-title">🔔 Nouvelle mise à jour</div><div class="vm-update-text">Une nouvelle version de VM RADIO est disponible.</div><div class="vm-update-actions"><button id="vm-update-now">Mettre à jour</button><button id="vm-update-later">Plus tard</button></div></div>';
+  const s=document.createElement("style");s.textContent='#vm-radio-update-notice{position:fixed;inset:auto 16px 16px;z-index:2147483646;display:flex;justify-content:center;font-family:Arial,Helvetica,sans-serif}.vm-update-card{width:min(100%,520px);padding:22px;border:2px solid #b85cff;border-radius:24px;background:linear-gradient(145deg,#050308,#0d0714);box-shadow:0 0 30px rgba(151,48,255,.5);color:#fff}.vm-update-title{font-size:22px;font-weight:900}.vm-update-text{margin:10px 0 18px;color:#d4ceda;line-height:1.4}.vm-update-actions{display:flex;gap:10px}.vm-update-actions button{flex:1;border-radius:14px;padding:13px;border:0;font-weight:800;cursor:pointer}.vm-update-actions button:first-child{background:linear-gradient(135deg,#c05cff,#6d20ed);color:#fff}.vm-update-actions button:last-child{background:#120d18;color:#fff;border:1px solid #8b2cff}';document.head.appendChild(s);document.body.appendChild(n);
   n.querySelector("#vm-update-later").onclick=()=>n.remove();
   n.querySelector("#vm-update-now").onclick=async()=>{n.remove();try{if(reg.waiting)reg.waiting.postMessage({type:"SKIP_WAITING"});else{await reg.update();if(reg.waiting)reg.waiting.postMessage({type:"SKIP_WAITING"});}}catch(e){location.reload();}};
 }
 navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!reloading){reloading=true;location.reload();}});
-navigator.serviceWorker.ready.then(reg=>{
-  const check=()=>reg.update().catch(()=>{});
-  check();setInterval(check,300000);
-  reg.addEventListener("updatefound",()=>{
-    const w=reg.installing;
-    if(!w)return;
-    w.addEventListener("statechange",()=>{
-      if(w.state==="installed"&&navigator.serviceWorker.controller)showUpdate(reg);
-    });
-  });
-});
+navigator.serviceWorker.ready.then(reg=>{const check=()=>reg.update().catch(()=>{});check();setInterval(check,300000);reg.addEventListener("updatefound",()=>{const w=reg.installing;if(!w)return;w.addEventListener("statechange",()=>{if(w.state==="installed"&&navigator.serviceWorker.controller)showUpdate(reg);});});});
 })();</script></body>`);
             }
 
