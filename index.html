@@ -1755,7 +1755,6 @@ function titleFirstUpper(v){
     function track(raw){let x=Array.isArray(raw)?raw[0]:raw;if(x&&x.track)x=x.track;if(x&&x.data&&x.data.track)x=x.data.track;if(!x)return null;return{title:x.title||x.name||x.song||"VM Radio",artist:x.artist||x.author||"Music IA By Valentin",cover:x.cover||x.cover_url||x.artwork||x.image||radio.fallback,time:x.started_at||x.start_at||x.played_at||null}}
     function img(el,url){el.src=url||radio.fallback;el.onerror=()=>{el.onerror=null;el.src=radio.fallback}}
     async function refresh(){try{const[a,b]=await Promise.all([fetch(radio.current,{cache:"no-store"}),fetch(radio.next,{cache:"no-store"})]);const now=track(await a.json()),next=track(await b.json());if(now){previousTrack={title:$("title").textContent||"Titre précédent",artist:$("artist").textContent||"Artiste"};$("programPrevious").textContent=titleFirstUpper(previousTrack.title);$("programPreviousArtist").textContent=previousTrack.artist;if($("cover").src)$("programPreviousCover").src=$("cover").src;$("title").textContent=titleFirstUpper(now.title);$("artist").textContent=now.artist;$("programCurrent").textContent=titleFirstUpper(now.title);$("programCurrentArtist").textContent=now.artist;img($("programCurrentCover"),now.cover);img($("cover"),now.cover);if(now.time){const t=new Date(now.time);$("started").textContent=Number.isNaN(t.getTime())?"En direct":"Depuis "+t.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}}if(next){$("nextTitle").textContent=next.title;$("programNext").textContent=titleFirstUpper(next.title);img($("nextCover"),next.cover)}}catch(e){console.warn("VM Radio",e)}}
-    window.__vmRadioRefreshNow=refresh;
     refresh();setInterval(refresh,10000);
 
     document.querySelectorAll(".program-tab").forEach(tab=>{
@@ -1898,7 +1897,6 @@ async function update(){
  }
  render(cur,next,hist);
 }
-window.__vmRadioHomeUpdate=update;
 update();
 setInterval(update,10000);
 })();
@@ -2392,9 +2390,33 @@ function syncNowPlaying(){
   }catch(e){}
 }
 
-try{navigator.mediaSession.setActionHandler("play",()=>audio.play().catch(()=>{}));}catch(e){}
-try{navigator.mediaSession.setActionHandler("pause",()=>audio.pause());}catch(e){}
-try{navigator.mediaSession.setActionHandler("stop",()=>audio.pause());}catch(e){}
+async function resumeRadioFromMediaControl(){
+  try{
+    await audio.play();
+  }catch(firstError){
+    try{
+      const currentSrc = audio.currentSrc || audio.src || "https://play.radioking.io/vm-radio2";
+      audio.src = currentSrc;
+      audio.load();
+      await audio.play();
+    }catch(secondError){
+      console.warn("VM RADIO — reprise depuis le contrôle multimédia impossible", secondError);
+      return;
+    }
+  }
+  try{navigator.mediaSession.playbackState="playing";}catch(e){}
+  syncNowPlaying();
+}
+
+function pauseRadioFromMediaControl(){
+  audio.pause();
+  try{navigator.mediaSession.playbackState="paused";}catch(e){}
+  syncNowPlaying();
+}
+
+try{navigator.mediaSession.setActionHandler("play",resumeRadioFromMediaControl);}catch(e){}
+try{navigator.mediaSession.setActionHandler("pause",pauseRadioFromMediaControl);}catch(e){}
+try{navigator.mediaSession.setActionHandler("stop",pauseRadioFromMediaControl);}catch(e){}
 
 audio.addEventListener("play",syncNowPlaying);
 audio.addEventListener("pause",syncNowPlaying);
@@ -2409,25 +2431,6 @@ if(artistEl)new MutationObserver(syncNowPlaying).observe(artistEl,{childList:tru
 if(coverEl)new MutationObserver(syncNowPlaying).observe(coverEl,{attributes:true,attributeFilter:["src"]});
 
 syncNowPlaying();
-})();
-</script>
-
-<script id="vm-radio-background-refresh">
-(function(){
-  "use strict";
-  const WAIT_MS=60000;
-  let hiddenAt=null;
-  document.addEventListener("visibilitychange",function(){
-    if(document.visibilityState==="hidden"){hiddenAt=Date.now();return;}
-    if(document.visibilityState==="visible"&&hiddenAt!==null){
-      const elapsed=Date.now()-hiddenAt;
-      hiddenAt=null;
-      if(elapsed>=WAIT_MS){
-        if(typeof window.__vmRadioRefreshNow==="function") window.__vmRadioRefreshNow();
-        if(typeof window.__vmRadioHomeUpdate==="function") window.__vmRadioHomeUpdate();
-      }
-    }
-  });
 })();
 </script>
 </body>
