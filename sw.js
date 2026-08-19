@@ -30,8 +30,8 @@ messaging.onBackgroundMessage(payload => {
   self.registration.showNotification(title, { body, icon, badge: icon, tag, data: { url: link } });
 });
 
-// v18 : mise à jour détectable avec notification système avant activation.
-const CACHE_NAME = "vm-radio-app-v18";
+// v19 : chargement du module audio de récupération.
+const CACHE_NAME = "vm-radio-app-v19";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -45,7 +45,8 @@ const APP_SHELL = [
   "./manifest.webmanifest",
   "./notifications.js",
   "./fcm-token-test.js",
-  "./fcm-token-sync.js"
+  "./fcm-token-sync.js",
+  "./audio-recovery.js"
 ];
 
 self.addEventListener("install", event => {
@@ -139,6 +140,9 @@ self.addEventListener("fetch", event => {
             }
             if (!injected.includes("./fcm-token-sync.js")) {
               injected = injected.replace(/<\/body>/i, '<script type="module" src="./fcm-token-sync.js?v=1"></script></body>');
+            }
+            if (!injected.includes("./audio-recovery.js")) {
+              injected = injected.replace(/<\/body>/i, '<script src="./audio-recovery.js?v=2"></script></body>');
             }
 
             if (!injected.includes("vm-radio-audio-recovery")) {
