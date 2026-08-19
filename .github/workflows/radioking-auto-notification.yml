@@ -1,9 +1,11 @@
 name: VM RADIO - Notification automatique nouvelle musique
 
 on:
-  push:
-    paths:
-      - 'data/radioking-latest.json'
+  workflow_run:
+    workflows:
+      - "RadioKing - Détection du titre en cours"
+    types:
+      - completed
   workflow_dispatch:
 
 permissions:
@@ -11,10 +13,19 @@ permissions:
 
 jobs:
   notify:
+    # Le workflow RadioKing est lancé toutes les 5 minutes.
+    # On envoie uniquement après une exécution réussie qui a réellement publié
+    # une nouvelle version de data/radioking-latest.json.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       startsWith(github.event.workflow_run.head_commit.message, 'Mise à jour Infos en temps réel - RadioKing'))
     runs-on: ubuntu-latest
     steps:
-      - name: Récupérer le dépôt
+      - name: Récupérer le dépôt au commit publié
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Installer Firebase Admin SDK
         run: npm install --no-save firebase-admin@13
