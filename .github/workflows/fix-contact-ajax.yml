@@ -1,8 +1,7 @@
 name: Fix contact form AJAX
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -13,62 +12,88 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Patch infos.html
+      - name: Patch Infos contact form
         run: |
           python - <<'PY'
           from pathlib import Path
           p = Path('infos.html')
           s = p.read_text(encoding='utf-8')
 
+          # Force the contact form to use FormSubmit's AJAX endpoint.
           s = s.replace(
-              '<form class="contact-form" id="contactForm" action="https://formsubmit.co/contact@vmradio.fr" method="POST">',
-              '<form class="contact-form" id="contactForm" action="https://formsubmit.co/ajax/contact@vmradio.fr" method="POST">',
-              1
-          )
-          s = s.replace(
-              '    <input type="hidden" name="_next" value="https://vmradio.fr/infos.html">\n',
-              '',
-              1
-          )
-          s = s.replace(
-              '    <p class="contact-help">Le bouton prépare votre e-mail à destination de contact@vmradio.fr.</p>',
-              '    <p class="contact-help" id="contactStatus" aria-live="polite">Votre message sera envoyé directement depuis cette page.</p>',
-              1
+              'https://formsubmit.co/contact@vmradio.fr',
+              'https://formsubmit.co/ajax/contact@vmradio.fr'
           )
 
+          # Remove redirect parameters that can send the visitor to FormSubmit.
+          import re
+          s = re.sub(r'\s*<input[^>]+name=["\']_next["\'][^>]*>', '', s, flags=re.I)
+          s = re.sub(r'\s*<input[^>]+name=["\']_captcha["\'][^>]*>', '', s, flags=re.I)
+
+          # Remove any existing contact AJAX handler inserted by an older patch.
+          s = re.sub(r'<script id=["\']vm-contact-ajax["\'][^>]*>.*?</script>', '', s, flags=re.I|re.S)
+
+          # Add an in-page AJAX handler before the existing contact script.
           marker = '<script id="vm-contact-form">'
-          ajax = '''<script id="vm-contact-ajax">
-          (function(){
-            const form = document.getElementById("contactForm");
-            if (!form || form.dataset.ajaxBound) return;
-            form.dataset.ajaxBound = "1";
-            form.addEventListener("submit", async function(e){
-              e.preventDefault();
-              const status = document.getElementById("contactStatus");
-              const button = form.querySelector('button[type="submit"]');
-              if (status) status.textContent = "Envoi en cours…";
-              if (button) { button.disabled = true; button.textContent = "⏳ ENVOI EN COURS…"; }
+          ajax = r'''<script id="vm-contact-ajax">
+          (() => {
+            const form = document.getElementById('contactForm');
+            if (!form || form.dataset.ajaxBound === '1') return;
+            form.dataset.ajaxBound = '1';
+            const status = document.getElementById('contactStatus');
+            const button = form.querySelector('button[type="submit"]');
+
+            form.addEventListener('submit', async (event) => {
+              event.preventDefault();
+              if (status) {
+                status.textContent = 'Envoi du message en cours…';
+                status.style.color = '';
+              }
+              if (button) {
+                button.disabled = true;
+                button.dataset.originalText = button.dataset.originalText || button.textContent;
+                button.textContent = '⏳ ENVOI EN COURS…';
+              }
+
               try {
-                const response = await fetch("https://formsubmit.co/ajax/contact@vmradio.fr", {
-                  method: "POST",
-                  headers: { "Accept": "application/json" },
+                const response = await fetch('https://formsubmit.co/ajax/contact@vmradio.fr', {
+                  method: 'POST',
+                  headers: { 'Accept': 'application/json' },
                   body: new FormData(form)
                 });
                 const data = await response.json().catch(() => ({}));
-                if (!response.ok || data.success === false) throw new Error("send failed");
+                if (!response.ok || data.success === false) throw new Error('send failed');
+
                 form.reset();
-                if (status) { status.textContent = "✅ Message envoyé avec succès !"; status.style.color = "#31d17b"; }
-              } catch (err) {
-                if (status) { status.textContent = "❌ Impossible d’envoyer le message. Réessayez."; status.style.color = "#ff7b8a"; }
+                if (status) {
+                  status.textContent = '✅ Message envoyé avec succès !';
+                  status.style.color = '#31d17b';
+                }
+              } catch (error) {
+                if (status) {
+                  status.textContent = '❌ Impossible d’envoyer le message. Réessayez.';
+                  status.style.color = '#ff7b8a';
+                }
               } finally {
-                if (button) { button.disabled = false; button.textContent = "✉️ ENVOYER LE MESSAGE"; }
+                if (button) {
+                  button.disabled = false;
+                  button.textContent = button.dataset.originalText || '✉️ ENVOYER LE MESSAGE';
+                }
               }
             }, true);
           })();
           </script>
           '''
-          if marker in s and 'id="vm-contact-ajax"' not in s:
+          if marker in s:
               s = s.replace(marker, ajax + marker, 1)
+          else:
+              s = s.replace('</body>', ajax + '\n</body>', 1)
+
+          # Make the status text available if the old help text exists.
+          s = s.replace(
+              'class="contact-help">Le bouton prépare votre e-mail à destination de contact@vmradio.fr.',
+              'class="contact-help" id="contactStatus">Votre message sera envoyé directement depuis cette page.'
+          )
 
           p.write_text(s, encoding='utf-8')
           PY
@@ -79,5 +104,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add infos.html
           git diff --cached --quiet && exit 0
-          git commit -m "Fix contact form AJAX submission"
+          git commit -m "Fix Infos contact form without redirect"
           git push
