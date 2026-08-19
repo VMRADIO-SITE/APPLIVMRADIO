@@ -1708,7 +1708,12 @@ body{padding-top:36px!important}
 <section class="contact-card" id="contact">
   <h2>📩 NOUS CONTACTER</h2>
   <p class="contact-subtitle">Une question, une suggestion ou un problème avec VM RADIO ? Envoyez-nous votre message.</p>
-  <form class="contact-form" id="contactForm">
+  <form class="contact-form" id="contactForm" action="https://formsubmit.co/contact@vmradio.fr" method="POST">
+    <input type="hidden" name="_subject" value="Nouveau message depuis VM RADIO">
+    <input type="hidden" name="_template" value="table">
+    <input type="hidden" name="_captcha" value="true">
+    <input type="hidden" name="_next" value="https://vmradio.fr/infos.html">
+    <input type="hidden" name="_url" value="https://vmradio.fr/infos.html">
     <label for="contactName">Nom / prénom</label>
     <input id="contactName" name="name" type="text" autocomplete="name" placeholder="Votre nom ou prénom" required>
     <label for="contactEmail">Adresse e-mail</label>
@@ -1950,14 +1955,14 @@ window.addEventListener("resize",function(){
   const form=document.getElementById("contactForm");
   if(!form)return;
   form.addEventListener("submit",function(e){
-    e.preventDefault();
     const name=(document.getElementById("contactName")?.value||"").trim();
     const email=(document.getElementById("contactEmail")?.value||"").trim();
     const subject=(document.getElementById("contactSubject")?.value||"").trim();
     const message=(document.getElementById("contactMessage")?.value||"").trim();
-    if(!name||!email||!subject||!message)return;
-    const body="Nom / prénom : "+name+"\nAdresse e-mail : "+email+"\n\n"+message;
-    window.location.href="mailto:contact@vmradio.fr?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body);
+    if(!name||!email||!subject||!message){
+      e.preventDefault();
+      return;
+    }
   });
 })();
 </script>
