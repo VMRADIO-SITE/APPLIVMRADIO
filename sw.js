@@ -1,5 +1,5 @@
 importScripts("https://www.gstatic.com/firebasejs/12.17.1/firebase-app-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/12.17.1/firebase-messaging-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/12.17.17/firebase-messaging-compat.js");
 
 const firebaseConfig = {
   apiKey: "AIzaSyB0LSbKdAAEfLg48c4DJO2hdyvjx0TySko",
@@ -30,8 +30,9 @@ messaging.onBackgroundMessage(payload => {
   self.registration.showNotification(title, { body, icon, badge: icon, tag, data: { url: link } });
 });
 
-// v23 : mise à jour affichée uniquement après confirmation que GitHub Pages a terminé son build.
-const CACHE_NAME = "vm-radio-app-v23";
+// v24 : service worker dédié au cache, audio et notifications FCM.
+// La détection/mise à jour du site est gérée uniquement par notifications.js.
+const CACHE_NAME = "vm-radio-app-v24";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -67,19 +68,6 @@ self.addEventListener("message", event => {
 self.addEventListener("notificationclick", event => {
   event.notification.close();
   const notificationData = event.notification.data || {};
-
-  if (notificationData.type === "vm-radio-update") {
-    event.waitUntil(
-      self.registration.update().catch(() => {}).then(() => {
-        if (self.registration.waiting) self.registration.waiting.postMessage({ type: "SKIP_WAITING" });
-        return clients.matchAll({ type: "window", includeUncontrolled: true });
-      }).then(windowClients => {
-        for (const client of windowClients) if ("focus" in client) return client.focus();
-        if (clients.openWindow) return clients.openWindow("./");
-      })
-    );
-    return;
-  }
 
   const fcmMessage = notificationData.FCM_MSG || notificationData.fcmMessage || {};
   const fcmOptions = fcmMessage.notification?.click_action ? { link: fcmMessage.notification.click_action } : (fcmMessage.fcmOptions || {});
@@ -124,7 +112,7 @@ self.addEventListener("fetch", event => {
             injected = injected.replace(/<\/head>/i, '<style id="vm-radio-no-pinch-zoom">html,body{touch-action:pan-x pan-y;overscroll-behavior-x:none}body{-webkit-text-size-adjust:100%}button,a,input,select,textarea{touch-action:manipulation}</style></head>');
           }
 
-          if (!injected.includes("./notifications.js")) injected = injected.replace(/<\/body>/i, '<script type="module" src="./notifications.js?v=vm23"></script></body>');
+          if (!injected.includes("./notifications.js")) injected = injected.replace(/<\/body>/i, '<script type="module" src="./notifications.js?v=vm24"></script></body>');
           if (!injected.includes("./fcm-token-sync.js")) injected = injected.replace(/<\/body>/i, '<script type="module" src="./fcm-token-sync.js?v=1"></script></body>');
           if (!injected.includes("./audio-recovery.js")) injected = injected.replace(/<\/body>/i, '<script src="./audio-recovery.js?v=2"></script></body>');
 
@@ -143,82 +131,6 @@ a.addEventListener("stalled",()=>{clearTimeout(stallTimer);stallTimer=setTimeout
 a.addEventListener("waiting",()=>{clearTimeout(stallTimer);stallTimer=setTimeout(()=>recover("waiting"),8000);});
 a.addEventListener("playing",()=>{retries=0;clearTimeout(stallTimer);});
 a.addEventListener("canplay",()=>clearTimeout(stallTimer));
-})();</script></body>`);
-          }
-
-          if (!injected.includes("vm-radio-auto-update")) {
-            injected = injected.replace(/<\/body>/i, `<script id="vm-radio-auto-update">(function(){
-if(!("serviceWorker" in navigator))return;
-let reloading=false,updatePending=false,updateRegistration=null,buildCheckTimer=0;
-const REPO_API="https://api.github.com/repos/VMRADIO-SITE/APPLIVMRADIO/pages/builds/latest";
-
-async function isPagesBuildReady(){
-  try{
-    const r=await fetch(REPO_API,{cache:"no-store",headers:{Accept:"application/vnd.github+json"}});
-    if(!r.ok)return false;
-    const data=await r.json();
-    return data && data.status === "built";
-  }catch(e){
-    console.warn("VM RADIO GitHub Pages build check",e);
-    return false;
-  }
-}
-
-async function showUpdate(reg){
-  if(updatePending)return;
-  if(!(await isPagesBuildReady())){
-    clearTimeout(buildCheckTimer);
-    buildCheckTimer=setTimeout(()=>showUpdate(reg),15000);
-    return;
-  }
-  updatePending=true;
-  updateRegistration=reg;
-  if("Notification" in window&&Notification.permission==="granted"){
-    try{await reg.showNotification("🔔 Mise à jour disponible",{body:"Une nouvelle version de VM RADIO est disponible.",icon:"./vmradio-app-icon-192.png",badge:"./vmradio-app-icon-192.png",tag:"vm-radio-update",renotify:true,data:{type:"vm-radio-update"},actions:[{action:"update",title:"Mettre à jour"},{action:"later",title:"Plus tard"}]});}catch(e){console.warn("Notification de mise à jour indisponible",e);}
-  }
-  if(document.getElementById("vm-radio-update-notice"))return;
-  const n=document.createElement("div");n.id="vm-radio-update-notice";n.setAttribute("role","status");n.innerHTML='<div class="vm-update-card"><div class="vm-update-title">🔔 Nouvelle mise à jour</div><div class="vm-update-text">Une nouvelle version de VM RADIO est disponible.</div><div class="vm-update-actions"><button id="vm-update-now">Mettre à jour</button><button id="vm-update-later">Plus tard</button></div></div>';
-  const s=document.createElement("style");s.textContent='#vm-radio-update-notice{position:fixed;inset:auto 16px 16px;z-index:2147483646;display:flex;justify-content:center;font-family:Arial,Helvetica,sans-serif}.vm-update-card{width:min(100%,520px);padding:22px;border:2px solid #b85cff;border-radius:24px;background:linear-gradient(145deg,#050308,#0d0714);box-shadow:0 0 30px rgba(151,48,255,.5);color:#fff}.vm-update-title{font-size:22px;font-weight:900}.vm-update-text{margin:10px 0 18px;color:#d4ceda;line-height:1.4}.vm-update-actions{display:flex;gap:10px}.vm-update-actions button{flex:1;border-radius:14px;padding:13px;border:0;font-weight:800;cursor:pointer}.vm-update-actions button:first-child{background:linear-gradient(135deg,#c05cff,#6d20ed);color:#fff}.vm-update-actions button:last-child{background:#120d18;color:#fff;border:1px solid #8b2cff}';document.head.appendChild(s);document.body.appendChild(n);
-  n.querySelector("#vm-update-later").onclick=()=>{n.remove();updatePending=false;};
-  n.querySelector("#vm-update-now").onclick=async()=>{n.remove();try{if(reg.waiting)reg.waiting.postMessage({type:"SKIP_WAITING"});else{await reg.update();if(reg.waiting)reg.waiting.postMessage({type:"SKIP_WAITING"});}}catch(e){location.reload();}};
-}
-
-async function checkPendingUpdate(){
-  try{
-    const reg=updateRegistration||await navigator.serviceWorker.ready;
-    updateRegistration=reg;
-    if(reg.waiting&&navigator.serviceWorker.controller){
-      if(await isPagesBuildReady())showUpdate(reg);
-      return;
-    }
-    await reg.update();
-    if(reg.waiting&&navigator.serviceWorker.controller){
-      if(await isPagesBuildReady())showUpdate(reg);
-    }
-  }catch(e){console.warn("VM RADIO update check",e);}
-}
-
-navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!reloading){reloading=true;location.reload();}});
-
-navigator.serviceWorker.ready.then(async reg=>{
-  updateRegistration=reg;
-  const check=()=>checkPendingUpdate();
-  check();
-  setInterval(check,300000);
-  reg.addEventListener("updatefound",()=>{
-    const w=reg.installing;if(!w)return;
-    w.addEventListener("statechange",()=>{
-      if(w.state==="installed"&&navigator.serviceWorker.controller){
-        clearTimeout(buildCheckTimer);
-        isPagesBuildReady().then(ok=>{if(ok)showUpdate(reg);else buildCheckTimer=setTimeout(()=>showUpdate(reg),15000);});
-      }
-    });
-  });
-  await checkPendingUpdate();
-});
-
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")checkPendingUpdate();});
-window.addEventListener("pageshow",checkPendingUpdate);
 })();</script></body>`);
           }
 
