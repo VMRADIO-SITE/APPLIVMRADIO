@@ -16,6 +16,8 @@ concurrency:
 jobs:
   check-track:
     runs-on: ubuntu-latest
+    outputs:
+      new_track: ${{ steps.detect.outputs.new_track }}
     steps:
       - name: Récupérer le dépôt
         uses: actions/checkout@v4
@@ -132,6 +134,21 @@ jobs:
           git commit -m 'Mise à jour Infos en temps réel - RadioKing'
           git push
 
+      - name: Déclencher la notification nouvelle musique
+        if: steps.detect.outputs.new_track == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api \
+            --method POST \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "/repos/${GITHUB_REPOSITORY}/dispatches" \
+            -f event_type='new_music'
+          echo '🔔 Événement new_music envoyé au workflow de notification.'
+
       - name: Mémoriser le titre pour les prochaines exécutions
         if: always()
         uses: actions/cache/save@v4
@@ -141,4 +158,4 @@ jobs:
 
       - name: Résultat
         if: steps.detect.outputs.new_track == 'true'
-        run: echo '🔔 Nouveau titre publié dans Infos en temps réel. FCM sera déclenché après la publication.'
+        run: echo '🔔 Nouveau titre publié dans Infos en temps réel et notification FCM déclenchée.'
