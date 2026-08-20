@@ -32,6 +32,23 @@ const gate=document.getElementById("notificationGate");
 const go=()=>{localStorage.setItem("vmRadioNotificationPromptShownV4","1");location.replace("./index.html?notifications=done")};
 const closeGate=()=>{gate.classList.remove("vm-ready");gate.classList.add("closing");setTimeout(()=>gate.remove(),180)};
 
+// Signale anonymement le premier lancement en mode application (PWA).
+// Le relais Cloudflare accepte uniquement POST et transmet un repository_dispatch à GitHub.
+const PWA_RELAY_URL="https://vmradio-pwa-relay.valentinrasle7070-vr.workers.dev";
+const PWA_RELAY_SENT_KEY="vmRadioPwaRelaySentV1";
+const isStandalone=()=>window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true;
+async function reportPwaStandaloneLaunch(){
+  if(!isStandalone()||localStorage.getItem(PWA_RELAY_SENT_KEY)==="1")return;
+  try{
+    const response=await fetch(PWA_RELAY_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({timestamp:new Date().toISOString()})});
+    if(response.ok)localStorage.setItem(PWA_RELAY_SENT_KEY,"1");
+    else console.warn("VM RADIO PWA relay:",response.status);
+  }catch(error){
+    console.warn("VM RADIO PWA relay indisponible:",error);
+  }
+}
+reportPwaStandaloneLaunch();
+
 // Le cadre est masqué par CSS dès le premier rendu : aucune apparition furtive.
 if(typeof Notification!=="undefined"&&Notification.permission==="granted"){
   go();
