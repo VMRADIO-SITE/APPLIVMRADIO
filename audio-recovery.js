@@ -12,6 +12,7 @@
   let reconnecting = false;
   let attempts = 0;
   let manualPause = false;
+  let internalPause = false;
 
   const getAudio = () => {
     if (audio && document.contains(audio)) return audio;
@@ -51,15 +52,14 @@
       reconnecting = false;
       if (!wanted || manualPause) return;
 
-      const resume = !a.paused;
+      internalPause = true;
       try { a.pause(); } catch (_) {}
       a.src = STREAM_URL + '?vm_reconnect=' + Date.now();
       a.load();
 
-      if (resume || wanted) {
-        const p = a.play();
-        if (p && typeof p.catch === 'function') p.catch(() => {});
-      }
+      const p = a.play();
+      if (p && typeof p.catch === 'function') p.catch(() => {});
+      setTimeout(() => { internalPause = false; }, 250);
     }, delay);
 
     console.warn('[VM RADIO] reconnexion du flux:', reason, 'tentative', attempts);
@@ -76,7 +76,7 @@
     if (!a || a.dataset.vmAudioRecoveryV2) return !!a;
     a.dataset.vmAudioRecoveryV2 = '1';
 
-    if (readWanted() && !a.paused) wanted = true;
+    if (readWanted()) wanted = true;
 
     a.addEventListener('play', () => {
       manualPause = false;
@@ -87,6 +87,8 @@
 
     a.addEventListener('playing', () => {
       reconnecting = false;
+      internalPause = false;
+      manualPause = false;
       attempts = 0;
       clearTimers();
     });
@@ -94,10 +96,10 @@
     a.addEventListener('canplay', () => clearTimeout(stallTimer));
 
     a.addEventListener('pause', () => {
-      // A pause event by itself is not enough to decide that the user stopped playback.
-      // The player remains the authority for explicit user pause state.
       clearTimers();
-      if (manualPause) saveWanted(false);
+      // A pause caused by our own recovery must never disable the requested playback.
+      if (internalPause) return;
+      // A real pause is handled by the player controls listener below.
     });
 
     a.addEventListener('stalled', () => armStallRecovery('stalled'));
@@ -131,12 +133,13 @@
 
   const patchPlayerControls = () => {
     const a = getAudio();
-    if (!a || a.dataset.vmAudioControlsV2) return;
-    a.dataset.vmAudioControlsV2 = '1';
+    if (!a || a.dataset.vmAudioControlsV3) return;
+    a.dataset.vmAudioControlsV3 = '1';
 
-    // Mark an explicit pause only when the media was already playing and the user action
-    // causes the audio to pause. The existing player remains responsible for the UI.
+    // Do not treat every pause event as a user action: the recovery system pauses
+    // the element briefly while replacing the RadioKing stream URL.
     a.addEventListener('pause', () => {
+      if (internalPause) return;
       if (document.visibilityState === 'visible') {
         manualPause = true;
         saveWanted(false);
