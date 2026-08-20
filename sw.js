@@ -30,9 +30,10 @@ messaging.onBackgroundMessage(payload => {
   self.registration.showNotification(title, { body, icon, badge: icon, tag, data: { url: link } });
 });
 
-// v24 : service worker dédié au cache, audio et notifications FCM.
+// v25 : service worker dédié au cache et aux notifications FCM.
+// La récupération du flux est gérée uniquement par audio-recovery.js.
 // La détection/mise à jour du site est gérée uniquement par notifications.js.
-const CACHE_NAME = "vm-radio-app-v24";
+const CACHE_NAME = "vm-radio-app-v25";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -111,27 +112,9 @@ self.addEventListener("fetch", event => {
             injected = injected.replace(/<\/head>/i, '<style id="vm-radio-no-pinch-zoom">html,body{touch-action:pan-x pan-y;overscroll-behavior-x:none}body{-webkit-text-size-adjust:100%}button,a,input,select,textarea{touch-action:manipulation}</style></head>');
           }
 
-          if (!injected.includes("./notifications.js")) injected = injected.replace(/<\/body>/i, '<script type="module" src="./notifications.js?v=vm24"></script></body>');
+          if (!injected.includes("./notifications.js")) injected = injected.replace(/<\/body>/i, '<script type="module" src="./notifications.js?v=vm25"></script></body>');
           if (!injected.includes("./fcm-token-sync.js")) injected = injected.replace(/<\/body>/i, '<script type="module" src="./fcm-token-sync.js?v=1"></script></body>');
-          if (!injected.includes("./audio-recovery.js")) injected = injected.replace(/<\/body>/i, '<script src="./audio-recovery.js?v=2"></script></body>');
-
-          if (!injected.includes("vm-radio-audio-recovery")) {
-            injected = injected.replace(/<\/body>/i, `<script id="vm-radio-audio-recovery">(function(){
-const a=document.getElementById("audio");
-if(!a||a.dataset.vmRecoveryBound)return;
-a.dataset.vmRecoveryBound="1";
-const STREAM="https://play.radioking.io/vm-radio2";
-let wanted=false,retries=0,timer=0,stallTimer=0;
-function recover(reason){if(!wanted)return;retries=Math.min(retries+1,8);const delay=Math.min(12000,700*Math.pow(1.55,retries-1));clearTimeout(timer);timer=setTimeout(()=>{if(!wanted)return;a.pause();a.src=STREAM+"?vm_retry="+Date.now();a.load();a.play().catch(()=>{});},delay);console.warn("VM RADIO flux audio : reconnexion",reason,"tentative",retries);}
-a.addEventListener("play",()=>{wanted=true;retries=0;clearTimeout(stallTimer);});
-a.addEventListener("pause",()=>{wanted=false;clearTimeout(timer);clearTimeout(stallTimer);});
-a.addEventListener("error",()=>recover("error"));
-a.addEventListener("stalled",()=>{clearTimeout(stallTimer);stallTimer=setTimeout(()=>recover("stalled"),7000);});
-a.addEventListener("waiting",()=>{clearTimeout(stallTimer);stallTimer=setTimeout(()=>recover("waiting"),8000);});
-a.addEventListener("playing",()=>{retries=0;clearTimeout(stallTimer);});
-a.addEventListener("canplay",()=>clearTimeout(stallTimer));
-})();</script></body>`);
-          }
+          if (!injected.includes("./audio-recovery.js")) injected = injected.replace(/<\/body>/i, '<script src="./audio-recovery.js?v=3"></script></body>');
 
           const headers = new Headers(response.headers);
           headers.delete("content-length");
