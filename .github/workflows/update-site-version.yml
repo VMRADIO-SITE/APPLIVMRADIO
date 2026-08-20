@@ -20,7 +20,19 @@ jobs:
         with:
           fetch-depth: 2
 
+      - name: Vérifier qu'une vraie modification du site existe
+        id: site-change
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --name-only HEAD^ HEAD | grep -Ev '^(version\.json|data/radioking-latest\.json)$' | grep -q .; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Générer la version globale
+        if: steps.site-change.outputs.changed == 'true'
         run: |
           set -euo pipefail
           cat > version.json <<EOF
@@ -30,6 +42,7 @@ jobs:
           EOF
 
       - name: Enregistrer la version
+        if: steps.site-change.outputs.changed == 'true'
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
