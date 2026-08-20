@@ -10,6 +10,15 @@
     measurementId: "G-ZJPS49DKG3"
   };
 
+  const removeLegacyUpdatePopup = () => {
+    const legacy = document.getElementById("vm-radio-update-notice");
+    if (legacy) legacy.remove();
+  };
+
+  removeLegacyUpdatePopup();
+  const observer = new MutationObserver(removeLegacyUpdatePopup);
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+
   async function syncToken() {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) return;
