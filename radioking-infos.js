@@ -15,11 +15,6 @@
     return '';
   }
 
-  function titleFirstUpper(value) {
-    const s = String(value ?? '').trim();
-    return s ? s.charAt(0).toLocaleUpperCase('fr-FR') + s.slice(1) : '';
-  }
-
   function formatDate(value) {
     if (!value) return '';
     const d = new Date(value);
@@ -36,7 +31,7 @@
     if (!title) return null;
     return {
       id: String(first(x.id, x.track_id, title)),
-      title: titleFirstUpper(title),
+      title: String(title).trim(),
       artist: String(first(x.artist, x.author, x.track_artist) || 'Music IA By Valentin').trim(),
       cover: String(first(x.cover, x.cover_url, x.artwork, x.artwork_url, x.image, x.picture) || FALLBACK),
       time: first(x.started_at, x.start_at, x.played_at, x.scheduled_at, x.time)
@@ -79,13 +74,6 @@
     document.head.appendChild(style);
   }
 
-  function normalizeDisplayedTitles() {
-    document.querySelectorAll('#title, [data-current-title], [data-next-title], .previous-title, #programCurrent, #programNext, #programPrevious').forEach(el => {
-      const value = el.textContent.trim();
-      if (value) el.textContent = titleFirstUpper(value);
-    });
-  }
-
   async function refresh() {
     const root = placeInsideRadio();
     if (!root) return;
@@ -111,7 +99,6 @@
             <div class="vmrk-date">Mis à jour : ${esc(formatDate(data.time))}</div>
           </div>
         </div>`;
-      normalizeDisplayedTitles();
     } catch (_) {
       root.innerHTML = '<div class="vmrk-empty">Connexion au direct en cours…</div>';
     }
@@ -120,9 +107,6 @@
   function start() {
     installFrameStyle();
     refresh();
-    normalizeDisplayedTitles();
-    const observer = new MutationObserver(() => normalizeDisplayedTitles());
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
     setInterval(refresh, POLL_MS);
   }
 
