@@ -3,6 +3,12 @@ name: VM RADIO - PWA install email
 on:
   repository_dispatch:
     types: [pwa-installed]
+  workflow_dispatch:
+    inputs:
+      timestamp:
+        description: 'Date de test (optionnelle)'
+        required: false
+        default: ''
 
 jobs:
   send-email:
@@ -16,7 +22,7 @@ jobs:
           SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           MAIL_TO: ${{ secrets.MAIL_TO }}
-          INSTALL_TIME: ${{ github.event.client_payload.timestamp }}
+          INSTALL_TIME: ${{ github.event.client_payload.timestamp || inputs.timestamp }}
         run: |
           python - <<'PY'
           import os, smtplib
@@ -34,7 +40,7 @@ jobs:
           msg.set_content(
               "Une nouvelle installation de VM RADIO a été détectée.\n\n"
               "Événement anonyme : PWA installée / lancée en mode application.\n"
-              f"Date de détection : {os.environ.get('INSTALL_TIME', 'inconnue')}\n"
+              f"Date de détection : {os.environ.get('INSTALL_TIME') or 'test manuel'}\n"
           )
 
           port = int(os.environ["SMTP_PORT"])
