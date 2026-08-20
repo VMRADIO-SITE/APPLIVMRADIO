@@ -1,0 +1,50 @@
+name: VM RADIO - PWA install email
+
+on:
+  repository_dispatch:
+    types: [pwa-installed]
+
+jobs:
+  send-email:
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Send installation email
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+          INSTALL_TIME: ${{ github.event.client_payload.timestamp }}
+        run: |
+          python - <<'PY'
+          import os, smtplib
+          from email.message import EmailMessage
+
+          required = ["SMTP_HOST", "SMTP_PORT", "SMTP_USERNAME", "SMTP_PASSWORD", "MAIL_TO"]
+          missing = [x for x in required if not os.environ.get(x)]
+          if missing:
+              raise SystemExit("Missing GitHub Actions secrets: " + ", ".join(missing))
+
+          msg = EmailMessage()
+          msg["From"] = os.environ["SMTP_USERNAME"]
+          msg["To"] = os.environ["MAIL_TO"]
+          msg["Subject"] = "📱 Nouvelle installation de VM RADIO"
+          msg.set_content(
+              "Une nouvelle installation de VM RADIO a été détectée.\n\n"
+              "Événement anonyme : PWA installée / lancée en mode application.\n"
+              f"Date de détection : {os.environ.get('INSTALL_TIME', 'inconnue')}\n"
+          )
+
+          port = int(os.environ["SMTP_PORT"])
+          if port == 465:
+              with smtplib.SMTP_SSL(os.environ["SMTP_HOST"], port, timeout=30) as smtp:
+                  smtp.login(os.environ["SMTP_USERNAME"], os.environ["SMTP_PASSWORD"])
+                  smtp.send_message(msg)
+          else:
+              with smtplib.SMTP(os.environ["SMTP_HOST"], port, timeout=30) as smtp:
+                  smtp.starttls()
+                  smtp.login(os.environ["SMTP_USERNAME"], os.environ["SMTP_PASSWORD"])
+                  smtp.send_message(msg)
+          PY
