@@ -1,4 +1,3 @@
-function vm\1vmTopTitleUpper(\2)\3return s?s.charAt(0).toLocaleUpperCase("fr-FR")+s.slice(1):"";}
 /* VM RADIO — source unique du flux
    Ce fichier ne contient aucun CSS et ne modifie jamais la structure/design des pages. */
 (function(){
@@ -16,6 +15,11 @@ function vm\1vmTopTitleUpper(\2)\3return s?s.charAt(0).toLocaleUpperCase("fr-FR"
 
   const first = (...v) => v.find(x => x !== undefined && x !== null && String(x).trim() !== "");
 
+  function titleCaseFirst(v){
+    const s = String(v == null ? "" : v).trim();
+    return s ? s.charAt(0).toLocaleUpperCase("fr-FR") + s.slice(1) : "";
+  }
+
   function normalise(raw){
     let x = raw;
     if (Array.isArray(x)) x = x[0];
@@ -28,7 +32,7 @@ function vm\1vmTopTitleUpper(\2)\3return s?s.charAt(0).toLocaleUpperCase("fr-FR"
 
     return {
       id: String(first(x.id, x.track_id, title)),
-      title: String(title).trim(),
+      title: titleCaseFirst(title),
       artist: String(first(x.artist, x.author, x.track_artist) || DEFAULT_ARTIST).trim(),
       cover: String(first(x.cover, x.cover_url, x.artwork, x.image, x.picture) || FALLBACK_COVER),
       time: first(x.started_at, x.start_at, x.played_at, x.scheduled_at, x.time) || null,
@@ -51,11 +55,6 @@ function vm\1vmTopTitleUpper(\2)\3return s?s.charAt(0).toLocaleUpperCase("fr-FR"
     return Number.isNaN(d.getTime()) ? "--:--" : d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
   }
 
-  function titleCaseFirst(v){
-    const s = String(v == null ? "" : v).trim();
-    return s ? s.charAt(0).toLocaleUpperCase("fr-FR") + s.slice(1) : "";
-  }
-
   function text(selector, value){
     document.querySelectorAll(selector).forEach(el => { el.textContent = value == null ? "" : value; });
   }
@@ -73,25 +72,25 @@ function vm\1vmTopTitleUpper(\2)\3return s?s.charAt(0).toLocaleUpperCase("fr-FR"
     const n = data.next;
     if (!c) return;
 
-    text("[data-current-title],#title,#programCurrent", titleCaseFirst(c.title));
+    text("[data-current-title],#title,#programCurrent", c.title);
     text("[data-current-artist]", c.artist);
     text("[data-current-time]", clock(c.time));
     image("[data-current-cover]", c.cover);
 
     if (n) {
-      text("[data-next-title],#nextTitle,#programNext", titleCaseFirst(n.title));
+      text("[data-next-title],#nextTitle,#programNext", n.title);
       text("[data-next-artist]", n.artist);
       text("[data-next-time]", clock(n.time));
       image("[data-next-cover]", n.cover);
     }
 
-    text("[data-news-current]", titleCaseFirst(c.title));
+    text("[data-news-current]", c.title);
     text("[data-news-current-artist]", c.artist);
     text("[data-news-current-time]", clock(c.time));
     image("[data-news-current-cover]", c.cover);
 
     if (n) {
-      text("[data-news-next]", titleCaseFirst(n.title));
+      text("[data-news-next]", n.title);
       text("[data-news-next-artist]", n.artist);
       text("[data-news-next-time]", clock(n.time));
       image("[data-news-next-cover]", n.cover);
@@ -99,7 +98,7 @@ function vm\1vmTopTitleUpper(\2)\3return s?s.charAt(0).toLocaleUpperCase("fr-FR"
 
     const last = data.history.find(x => x.id !== c.id && x.type === "music") || null;
     if (last) {
-      text("[data-news-last]", last.title);
+      text("[data-news-last]", titleCaseFirst(last.title));
       text("[data-news-last-artist]", last.artist);
       text("[data-news-last-time]", clock(last.time));
       image("[data-news-last-cover]", last.cover);
@@ -116,7 +115,7 @@ function vm\1vmTopTitleUpper(\2)\3return s?s.charAt(0).toLocaleUpperCase("fr-FR"
         const im = row.querySelector("img");
         im.src = x.cover || FALLBACK_COVER;
         im.onerror = () => { im.src = FALLBACK_COVER; };
-        row.querySelector(".previous-title").textContent = titleCaseFirst(x.title);
+        row.querySelector(".previous-title").textContent = x.title;
         row.querySelector(".previous-artist").textContent = x.artist;
         row.querySelector(".previous-time").textContent = clock(x.time);
         previous.appendChild(row);
