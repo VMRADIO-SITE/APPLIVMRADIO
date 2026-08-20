@@ -13,6 +13,20 @@
   const removeLegacyUpdatePopup = () => {
     const legacy = document.getElementById("vm-radio-update-notice");
     if (legacy) legacy.remove();
+
+    document.querySelectorAll("body *").forEach(el => {
+      const text = (el.textContent || "").replace(/\s+/g, " ").trim();
+      if (!text.includes("Nouvelle mise à jour disponible") || !text.includes("Mettre à jour") || text.includes("Plus tard")) return;
+
+      let target = el;
+      for (let i = 0; i < 6 && target.parentElement; i++) {
+        const parent = target.parentElement;
+        const position = getComputedStyle(parent).position;
+        if (position === "fixed" || position === "absolute") target = parent;
+        else break;
+      }
+      if (target !== document.body && target !== document.documentElement) target.remove();
+    });
   };
 
   removeLegacyUpdatePopup();
