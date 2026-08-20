@@ -4,6 +4,8 @@
   const STREAM_URL = 'https://play.radioking.io/vm-radio2';
   const AUDIO_SELECTORS = ['#audio', 'audio'];
   const KEY = 'vmradio-audio-wanted';
+  const STALL_DELAY = 9000;
+  const RECOVERY_COOLDOWN = 12000;
 
   let audio = null;
   let wanted = false;
@@ -13,6 +15,7 @@
   let attempts = 0;
   let manualPause = false;
   let internalPause = false;
+  let lastRecovery = 0;
 
   const getAudio = () => {
     if (audio && document.contains(audio)) return audio;
@@ -39,13 +42,16 @@
     stallTimer = 0;
   };
 
-  const reconnect = reason => {
+  const recover = reason => {
     const a = getAudio();
+    const now = Date.now();
     if (!a || !wanted || manualPause || reconnecting) return;
+    if (now - lastRecovery < RECOVERY_COOLDOWN) return;
 
+    lastRecovery = now;
     reconnecting = true;
-    attempts = Math.min(attempts + 1, 8);
-    const delay = Math.min(10000, 500 * Math.pow(1.55, attempts - 1));
+    attempts = Math.min(attempts + 1, 6);
+    const delay = Math.min(9000, 900 * Math.pow(1.5, attempts - 1));
 
     clearTimeout(reconnectTimer);
     reconnectTimer = setTimeout(() => {
@@ -53,30 +59,37 @@
       if (!wanted || manualPause) return;
 
       internalPause = true;
+      const wasPlaying = !a.paused;
       try { a.pause(); } catch (_) {}
-      a.src = STREAM_URL + '?vm_reconnect=' + Date.now();
+      a.src = STREAM_URL + '?vm_watchdog=' + Date.now();
       a.load();
 
-      const p = a.play();
-      if (p && typeof p.catch === 'function') p.catch(() => {});
-      setTimeout(() => { internalPause = false; }, 250);
+      if (wasPlaying || wanted) {
+        const p = a.play();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      }
+      setTimeout(() => { internalPause = false; }, 400);
     }, delay);
 
-    console.warn('[VM RADIO] reconnexion du flux:', reason, 'tentative', attempts);
+    console.warn('[VM RADIO] watchdog flux:', reason, 'tentative', attempts);
   };
 
   const armStallRecovery = reason => {
-    if (!wanted || manualPause) return;
+    if (!wanted || manualPause || reconnecting) return;
     clearTimeout(stallTimer);
-    stallTimer = setTimeout(() => reconnect(reason), 6500);
+    stallTimer = setTimeout(() => {
+      const a = getAudio();
+      if (!a || !wanted || manualPause) return;
+      if (a.paused || a.readyState < 2) recover(reason);
+    }, STALL_DELAY);
   };
 
   const bind = () => {
     const a = getAudio();
-    if (!a || a.dataset.vmAudioRecoveryV2) return !!a;
-    a.dataset.vmAudioRecoveryV2 = '1';
+    if (!a || a.dataset.vmAudioRecoveryV4) return !!a;
+    a.dataset.vmAudioRecoveryV4 = '1';
 
-    if (readWanted()) wanted = true;
+    if (readWanted() && !a.paused) wanted = true;
 
     a.addEventListener('play', () => {
       manualPause = false;
@@ -88,7 +101,6 @@
     a.addEventListener('playing', () => {
       reconnecting = false;
       internalPause = false;
-      manualPause = false;
       attempts = 0;
       clearTimers();
     });
@@ -97,35 +109,37 @@
 
     a.addEventListener('pause', () => {
       clearTimers();
-      // A pause caused by our own recovery must never disable the requested playback.
       if (internalPause) return;
-      // A real pause is handled by the player controls listener below.
+      // A spontaneous pause while playback was requested can be recovered.
+      if (wanted && !manualPause) setTimeout(() => recover('pause inattendue'), 1200);
     });
 
     a.addEventListener('stalled', () => armStallRecovery('stalled'));
     a.addEventListener('waiting', () => armStallRecovery('waiting'));
-    a.addEventListener('error', () => reconnect('error'));
-    a.addEventListener('ended', () => reconnect('ended'));
+    a.addEventListener('error', () => recover('error'));
+    a.addEventListener('ended', () => recover('ended'));
 
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && wanted && !manualPause) {
         setTimeout(() => {
           const current = getAudio();
-          if (!current) return;
-          if (current.paused || current.readyState < 2) reconnect('retour au premier plan');
-          else current.play().catch(() => {});
-        }, 350);
+          if (!current || !wanted || manualPause) return;
+          if (current.paused && !reconnecting) recover('retour au premier plan');
+        }, 700);
       }
     });
 
     window.addEventListener('pageshow', () => {
       if (wanted && !manualPause) {
-        setTimeout(() => reconnect('retour dans l’application'), 500);
+        setTimeout(() => {
+          const current = getAudio();
+          if (current && current.paused) recover('retour dans l’application');
+        }, 1000);
       }
     });
 
     window.addEventListener('online', () => {
-      if (wanted && !manualPause) reconnect('connexion rétablie');
+      if (wanted && !manualPause) recover('connexion rétablie');
     });
 
     return true;
@@ -133,11 +147,8 @@
 
   const patchPlayerControls = () => {
     const a = getAudio();
-    if (!a || a.dataset.vmAudioControlsV3) return;
-    a.dataset.vmAudioControlsV3 = '1';
-
-    // Do not treat every pause event as a user action: the recovery system pauses
-    // the element briefly while replacing the RadioKing stream URL.
+    if (!a || a.dataset.vmAudioControlsV4) return;
+    a.dataset.vmAudioControlsV4 = '1';
     a.addEventListener('pause', () => {
       if (internalPause) return;
       if (document.visibilityState === 'visible') {
