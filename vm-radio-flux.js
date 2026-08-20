@@ -55,6 +55,69 @@
     return Number.isNaN(d.getTime()) ? "--:--" : d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
   }
 
+  const TITLE_SELECTORS = [
+    "[data-current-title]",
+    "#currentTitle",
+    "#title",
+    "#programCurrent",
+    ".current-title",
+    "[data-next-title]",
+    "#nextTitle",
+    "#programNext",
+    ".next-title",
+    "[data-news-current]",
+    "[data-news-next]",
+    "[data-news-last]",
+    "[data-previous] .previous-title",
+    "[data-top-title]",
+    "[data-top-titre]",
+    ".top-title",
+    ".top-titre",
+    ".top-titres .title",
+    ".top-titres .track-title"
+  ].join(",");
+
+  function enforceTitleCase(root=document){
+    root.querySelectorAll(TITLE_SELECTORS).forEach(el => {
+      const value = el.textContent || "";
+      const fixed = titleCaseFirst(value);
+      if (value !== fixed) el.textContent = fixed;
+    });
+  }
+
+  function startTitleGuard(){
+    if (window.__VMRadioTitleGuardStarted) return;
+    window.__VMRadioTitleGuardStarted = true;
+
+    const run = () => enforceTitleCase(document);
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", run, { once:true });
+    } else {
+      run();
+    }
+
+    // Protection ciblée uniquement sur les éléments de titres radio.
+    // Aucun attribut/style/class n'est observé et aucune autre zone du site n'est modifiée.
+    const observer = new MutationObserver(mutations => {
+      for (const mutation of mutations) {
+        if (mutation.type === "characterData") {
+          const el = mutation.target.parentElement;
+          if (el && el.matches(TITLE_SELECTORS)) {
+            const fixed = titleCaseFirst(el.textContent);
+            if (el.textContent !== fixed) el.textContent = fixed;
+          }
+        }
+        if (mutation.type === "childList") {
+          mutation.addedNodes.forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE) enforceTitleCase(node);
+            else if (node.parentElement) enforceTitleCase(node.parentElement);
+          });
+        }
+      }
+    });
+    observer.observe(document.body, { childList:true, subtree:true, characterData:true });
+  }
+
   function text(selector, value){
     document.querySelectorAll(selector).forEach(el => { el.textContent = value == null ? "" : value; });
   }
@@ -72,7 +135,7 @@
     const n = data.next;
     if (!c) return;
 
-    text("[data-current-title],#title,#programCurrent", c.title);
+    text("[data-current-title],#currentTitle,#title,#programCurrent", c.title);
     text("[data-current-artist]", c.artist);
     text("[data-current-time]", clock(c.time));
     image("[data-current-cover]", c.cover);
@@ -115,12 +178,14 @@
         const im = row.querySelector("img");
         im.src = x.cover || FALLBACK_COVER;
         im.onerror = () => { im.src = FALLBACK_COVER; };
-        row.querySelector(".previous-title").textContent = x.title;
+        row.querySelector(".previous-title").textContent = titleCaseFirst(x.title);
         row.querySelector(".previous-artist").textContent = x.artist;
         row.querySelector(".previous-time").textContent = clock(x.time);
         previous.appendChild(row);
       });
     }
+
+    enforceTitleCase(document);
   }
 
   async function update(){
@@ -147,6 +212,7 @@
     }
   }
 
+  startTitleGuard();
   update();
   setInterval(update, REFRESH_MS);
 
