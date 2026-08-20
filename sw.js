@@ -1,5 +1,5 @@
 importScripts("https://www.gstatic.com/firebasejs/12.17.1/firebase-app-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/12.17.17/firebase-messaging-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/12.17.1/firebase-messaging-compat.js");
 
 const firebaseConfig = {
   apiKey: "AIzaSyB0LSbKdAAEfLg48c4DJO2hdyvjx0TySko",
@@ -68,7 +68,6 @@ self.addEventListener("message", event => {
 self.addEventListener("notificationclick", event => {
   event.notification.close();
   const notificationData = event.notification.data || {};
-
   const fcmMessage = notificationData.FCM_MSG || notificationData.fcmMessage || {};
   const fcmOptions = fcmMessage.notification?.click_action ? { link: fcmMessage.notification.click_action } : (fcmMessage.fcmOptions || {});
   const targetUrl = notificationData.url || notificationData.link || fcmOptions.link || fcmOptions.click_action || "./";
