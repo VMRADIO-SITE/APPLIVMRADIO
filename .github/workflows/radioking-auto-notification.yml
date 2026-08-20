@@ -1,12 +1,12 @@
 name: VM RADIO - Notification automatique nouvelle musique
 
 on:
-  # Le workflow RadioKing publie data/radioking-latest.json uniquement
-  # lorsqu'un nouveau titre est détecté. On écoute donc directement cette
-  # publication plutôt que workflow_run, qui pouvait être marqué "Skipped".
-  push:
-    paths:
-      - 'data/radioking-latest.json'
+  # Le workflow de détection déclenche explicitement repository_dispatch
+  # après avoir publié une nouvelle musique. C'est plus fiable que
+  # workflow_run, qui pouvait arriver avec un job "Skipped".
+  repository_dispatch:
+    types:
+      - new_music
   workflow_dispatch:
 
 permissions:
