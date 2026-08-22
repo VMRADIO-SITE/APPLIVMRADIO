@@ -30,10 +30,8 @@ messaging.onBackgroundMessage(payload => {
   self.registration.showNotification(title, { body, icon, badge: icon, tag, data: { url: link } });
 });
 
-// v25 : service worker dédié au cache et aux notifications FCM.
-// La récupération du flux est gérée uniquement par audio-recovery.js.
-// La détection/mise à jour du site est gérée uniquement par notifications.js.
-const CACHE_NAME = "vm-radio-app-v25";
+// v26 : service worker dédié au cache, aux notifications FCM et au relais d'installation PWA.
+const CACHE_NAME = "vm-radio-app-v26";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -47,7 +45,8 @@ const APP_SHELL = [
   "./manifest.webmanifest",
   "./notifications.js",
   "./fcm-token-sync.js",
-  "./audio-recovery.js"
+  "./audio-recovery.js",
+  "./pwa-install-tracker.js"
 ];
 
 self.addEventListener("install", event => {
@@ -112,9 +111,10 @@ self.addEventListener("fetch", event => {
             injected = injected.replace(/<\/head>/i, '<style id="vm-radio-no-pinch-zoom">html,body{touch-action:pan-x pan-y;overscroll-behavior-x:none}body{-webkit-text-size-adjust:100%}button,a,input,select,textarea{touch-action:manipulation}</style></head>');
           }
 
-          if (!injected.includes("./notifications.js")) injected = injected.replace(/<\/body>/i, '<script type="module" src="./notifications.js?v=vm25"></script></body>');
+          if (!injected.includes("./notifications.js")) injected = injected.replace(/<\/body>/i, '<script type="module" src="./notifications.js?v=vm26"></script></body>');
           if (!injected.includes("./fcm-token-sync.js")) injected = injected.replace(/<\/body>/i, '<script type="module" src="./fcm-token-sync.js?v=1"></script></body>');
           if (!injected.includes("./audio-recovery.js")) injected = injected.replace(/<\/body>/i, '<script src="./audio-recovery.js?v=3"></script></body>');
+          if (!injected.includes("./pwa-install-tracker.js")) injected = injected.replace(/<\/body>/i, '<script src="./pwa-install-tracker.js?v=1"></script></body>');
 
           const headers = new Headers(response.headers);
           headers.delete("content-length");
