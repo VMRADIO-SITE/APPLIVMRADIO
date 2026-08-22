@@ -1,12 +1,12 @@
 (() => {
   'use strict';
 
-  const KEY = 'vmradioPwaInstallReportedV2';
-  const INSTALL_ID_KEY = 'vmradioPwaInstallIdV1';
+  const KEY = 'vmradioPwaInstallReportedV3';
+  const INSTALL_ID_KEY = 'vmradioPwaInstallIdV2';
   const ADMIN_INSTALL_ENDPOINT = 'https://vmradio-admin.valentinrasle707.workers.dev/api/pwa/install';
 
-  function isStandalone() {
-    return window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  function isVmRadioApp() {
+    return location.hostname === 'app.vmradio.fr' || location.hostname === 'www.app.vmradio.fr';
   }
 
   function getInstallId() {
@@ -20,42 +20,51 @@
   }
 
   async function relayInstall() {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
     try {
       const payload = JSON.stringify({
         installId: getInstallId(),
         platform: 'web',
-        version: document.querySelector('meta[name="vm-radio-version"]')?.content || ''
+        version: document.querySelector('meta[name="vm-radio-version"]')?.content || '',
+        source: 'APPLIVMRADIO'
       });
       const response = await fetch(ADMIN_INSTALL_ENDPOINT, {
         method: 'POST',
         mode: 'cors',
-        keepalive: true,
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: payload
+        body: payload,
+        signal: controller.signal
       });
-      if (!response.ok) return false;
       const result = await response.json().catch(() => null);
-      return result?.ok === true;
-    } catch (_) {
+      if (!response.ok || result?.ok !== true) {
+        console.warn('[VM RADIO] PWA relay rejected', response.status, result);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.warn('[VM RADIO] PWA relay failed', error);
       return false;
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
   async function reportInstall() {
-    if (!isStandalone()) return;
+    // app.vmradio.fr est exclusivement le domaine de l'application :
+    // on ne dépend donc plus de display-mode standalone, qui est peu fiable
+    // selon le navigateur (notamment iOS/Safari).
+    if (!isVmRadioApp()) return;
     if (localStorage.getItem(KEY) === '1') return;
 
     const success = await relayInstall();
-    if (!success) {
-      console.warn('[VM RADIO] PWA install relay unavailable; will retry later');
-      return;
-    }
+    if (!success) return;
 
     localStorage.setItem(KEY, '1');
     window.dispatchEvent(new CustomEvent('vmradio:pwa-installed', {
       detail: { installed: true, timestamp: new Date().toISOString() }
     }));
-    console.info('[VM RADIO] PWA install detected and relayed');
+    console.info('[VM RADIO] App installation relayed successfully');
   }
 
   if (document.readyState === 'loading') {
