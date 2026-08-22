@@ -2,7 +2,7 @@ importScripts("https://www.gstatic.com/firebasejs/12.17.1/firebase-app-compat.js
 importScripts("https://www.gstatic.com/firebasejs/12.17.1/firebase-messaging-compat.js");
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB0LSbKdAAEfLg48c4DJO2hdyvjx0TySko",
+  apiKey: "AIzaSyB0LSkBdAAEfLg48c4DJO2hdyvjx0TySko",
   authDomain: "vm-radio-notifications.firebaseapp.com",
   projectId: "vm-radio-notifications",
   storageBucket: "vm-radio-notifications.firebasestorage.app",
@@ -30,8 +30,8 @@ messaging.onBackgroundMessage(payload => {
   self.registration.showNotification(title, { body, icon, badge: icon, tag, data: { url: link } });
 });
 
-// v26 : service worker dédié au cache, aux notifications FCM et au relais d'installation PWA.
-const CACHE_NAME = "vm-radio-app-v26";
+// v27 : cache et relais d'installation PWA fiabilisés.
+const CACHE_NAME = "vm-radio-app-v27";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -46,7 +46,7 @@ const APP_SHELL = [
   "./notifications.js",
   "./fcm-token-sync.js",
   "./audio-recovery.js",
-  "./pwa-install-tracker.js"
+  "./pwa-install-tracker.js?v=2"
 ];
 
 self.addEventListener("install", event => {
@@ -111,10 +111,10 @@ self.addEventListener("fetch", event => {
             injected = injected.replace(/<\/head>/i, '<style id="vm-radio-no-pinch-zoom">html,body{touch-action:pan-x pan-y;overscroll-behavior-x:none}body{-webkit-text-size-adjust:100%}button,a,input,select,textarea{touch-action:manipulation}</style></head>');
           }
 
-          if (!injected.includes("./notifications.js")) injected = injected.replace(/<\/body>/i, '<script type="module" src="./notifications.js?v=vm26"></script></body>');
+          if (!injected.includes("./notifications.js")) injected = injected.replace(/<\/body>/i, '<script type="module" src="./notifications.js?v=vm27"></script></body>');
           if (!injected.includes("./fcm-token-sync.js")) injected = injected.replace(/<\/body>/i, '<script type="module" src="./fcm-token-sync.js?v=1"></script></body>');
           if (!injected.includes("./audio-recovery.js")) injected = injected.replace(/<\/body>/i, '<script src="./audio-recovery.js?v=3"></script></body>');
-          if (!injected.includes("./pwa-install-tracker.js")) injected = injected.replace(/<\/body>/i, '<script src="./pwa-install-tracker.js?v=1"></script></body>');
+          if (!injected.includes("./pwa-install-tracker.js")) injected = injected.replace(/<\/body>/i, '<script src="./pwa-install-tracker.js?v=2"></script></body>');
 
           const headers = new Headers(response.headers);
           headers.delete("content-length");
