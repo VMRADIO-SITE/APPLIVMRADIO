@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const KEY = 'vmradioPwaInstallReportedV1';
+  const KEY = 'vmradioPwaInstallReportedV2';
   const INSTALL_ID_KEY = 'vmradioPwaInstallIdV1';
   const ADMIN_INSTALL_ENDPOINT = 'https://vmradio-admin.valentinrasle707.workers.dev/api/pwa/install';
 
@@ -26,25 +26,32 @@
         platform: 'web',
         version: document.querySelector('meta[name="vm-radio-version"]')?.content || ''
       });
-      await fetch(ADMIN_INSTALL_ENDPOINT, {
+      const response = await fetch(ADMIN_INSTALL_ENDPOINT, {
         method: 'POST',
         mode: 'cors',
         keepalive: true,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: payload
       });
+      if (!response.ok) return false;
+      const result = await response.json().catch(() => null);
+      return result?.ok === true;
     } catch (_) {
-      // The local install marker remains valid even if the admin relay is temporarily unavailable.
+      return false;
     }
   }
 
-  function reportInstall() {
+  async function reportInstall() {
     if (!isStandalone()) return;
     if (localStorage.getItem(KEY) === '1') return;
 
-    localStorage.setItem(KEY, '1');
-    relayInstall();
+    const success = await relayInstall();
+    if (!success) {
+      console.warn('[VM RADIO] PWA install relay unavailable; will retry later');
+      return;
+    }
 
+    localStorage.setItem(KEY, '1');
     window.dispatchEvent(new CustomEvent('vmradio:pwa-installed', {
       detail: { installed: true, timestamp: new Date().toISOString() }
     }));
