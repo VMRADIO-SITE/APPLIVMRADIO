@@ -1,9 +1,6 @@
 name: VM RADIO - Notification automatique nouvelle musique
 
 on:
-  # Le workflow de détection déclenche explicitement repository_dispatch
-  # après avoir publié une nouvelle musique. C'est plus fiable que
-  # workflow_run, qui pouvait arriver avec un job "Skipped".
   repository_dispatch:
     types:
       - new_music
@@ -16,7 +13,7 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Récupérer le dépôt au commit publié
+      - name: Récupérer le dépôt
         uses: actions/checkout@v4
 
       - name: Installer Firebase Admin SDK
@@ -25,6 +22,9 @@ jobs:
       - name: Envoyer la notification FCM
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          NEW_MUSIC_ID: ${{ github.event.client_payload.id }}
+          NEW_MUSIC_TITLE: ${{ github.event.client_payload.title }}
+          NEW_MUSIC_ARTIST: ${{ github.event.client_payload.artist }}
         shell: bash
         run: |
           set -euo pipefail
@@ -34,7 +34,6 @@ jobs:
           fi
 
           node <<'NODE'
-          const fs = require('fs');
           const admin = require('firebase-admin');
 
           const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
@@ -42,41 +41,63 @@ jobs:
 
           const db = admin.firestore();
           const messaging = admin.messaging();
-          const track = JSON.parse(fs.readFileSync('data/radioking-latest.json', 'utf8'));
-          const rawTitle = String(track.title || 'Nouvelle Musique').trim();
-          const title = rawTitle
+          const musicId = String(process.env.NEW_MUSIC_ID || '').trim();
+          const rawTitle = String(process.env.NEW_MUSIC_TITLE || 'Nouvelle Musique').trim();
+          const artist = String(process.env.NEW_MUSIC_ARTIST || 'Music IA By Valentin').trim();
+          const songTitle = rawTitle
             ? rawTitle.charAt(0).toLocaleUpperCase('fr-FR') + rawTitle.slice(1)
             : 'Nouvelle Musique';
-          const artist = String(track.artist || '').trim();
+          const notificationTitle = '🎵 Nouvelle musique sur VM RADIO';
           const body = artist
-            ? `${title} — ${artist} est maintenant disponible sur VM RADIO !`
-            : `${title} est maintenant disponible sur VM RADIO !`;
+            ? `${songTitle} — ${artist} est maintenant disponible !`
+            : `${songTitle} est maintenant disponible sur VM RADIO !`;
           const link = 'https://app.vmradio.fr/';
+          const tag = musicId ? `vm-radio-new-music-${musicId}` : 'vm-radio-nouvelle-musique';
 
           (async () => {
+            if (musicId) {
+              const sentRef = db.collection('notificationHistory').doc(`new_music_${musicId}`);
+              const sent = await sentRef.get();
+              if (sent.exists) {
+                console.log(`ID ${musicId} déjà notifié. Envoi annulé pour éviter un doublon.`);
+                return;
+              }
+
+              await sentRef.set({
+                type: 'new_music',
+                musicId,
+                title: songTitle,
+                artist,
+                createdAt: admin.firestore.FieldValue.serverTimestamp()
+              });
+            }
+
             const snapshot = await db.collection('fcmTokens').get();
             const tokens = snapshot.docs
               .map(doc => String(doc.get('token') || '').trim())
               .filter(Boolean);
 
+            console.log(`Nouvelle musique ID: ${musicId || 'inconnu'}`);
             console.log(`Tokens FCM trouvés : ${tokens.length}`);
-            if (!tokens.length) {
-              console.log('Aucun appareil enregistré. Rien à envoyer.');
-              return;
-            }
+            if (!tokens.length) return;
 
             for (let i = 0; i < tokens.length; i += 500) {
               const batch = tokens.slice(i, i + 500);
               const response = await messaging.sendEachForMulticast({
                 tokens: batch,
-                notification: { title, body },
+                notification: { title: notificationTitle, body },
                 data: {
-                  title,
+                  type: 'new_music',
+                  musicId,
+                  songTitle,
+                  artist,
+                  title: notificationTitle,
                   body,
                   url: link,
-                  tag: 'vm-radio-nouvelle-musique'
+                  tag
                 },
                 webpush: {
+                  notification: { tag },
                   fcmOptions: { link }
                 }
               });
