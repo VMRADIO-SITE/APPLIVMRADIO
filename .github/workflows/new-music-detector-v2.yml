@@ -1,0 +1,150 @@
+name: VM RADIO - Détecteur nouvelles musiques V2
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: vmradio-new-music-detector-v2
+  cancel-in-progress: true
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Vérifier le secret AzuraCast
+        env:
+          AZURACAST_API_KEY: ${{ secrets.AZURACAST_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${AZURACAST_API_KEY:-}" ]; then
+            echo "AZURACAST_API_KEY manquant dans les secrets GitHub."
+            exit 1
+          fi
+
+      - name: Restaurer les IDs déjà connus
+        uses: actions/cache/restore@v4
+        with:
+          path: .vmradio-new-music-state
+          key: vmradio-new-music-v2-${{ github.run_id }}
+          restore-keys: |
+            vmradio-new-music-v2-
+
+      - name: Charger la bibliothèque AzuraCast
+        env:
+          AZURACAST_API_KEY: ${{ secrets.AZURACAST_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --retry 3 --retry-delay 3 --fail-with-body -sS \
+            -H "X-API-Key: ${AZURACAST_API_KEY}" \
+            -H "Authorization: Bearer ${AZURACAST_API_KEY}" \
+            -H 'Accept: application/json' \
+            'https://radio.vmradio.fr/api/station/1/files' \
+            -o /tmp/azura-files.json
+
+          node -e "const d=require('/tmp/azura-files.json'); const rows=Array.isArray(d)?d:(Array.isArray(d?.data)?d.data:(Array.isArray(d?.rows)?d.rows:[])); console.log('Médias reçus:', rows.length); if(!rows.length) process.exit(2)"
+
+      - name: Détecter les nouveaux IDs musique
+        id: detect
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .vmradio-new-music-state
+
+          node <<'NODE'
+          const fs = require('fs');
+
+          const raw = JSON.parse(fs.readFileSync('/tmp/azura-files.json', 'utf8'));
+          const rows = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : Array.isArray(raw?.rows) ? raw.rows : [];
+
+          function normalize(row) {
+            const media = row?.media && typeof row.media === 'object' ? row.media : row;
+            const id = String(media?.media_id ?? row?.media_id ?? media?.id ?? row?.id ?? '').trim();
+            const title = String(media?.title ?? row?.title ?? row?.name ?? '').trim();
+            const artist = String(media?.artist ?? row?.artist ?? 'Music IA By Valentin').trim();
+            const filename = String(row?.path ?? row?.name ?? media?.path ?? media?.filename ?? '').trim();
+            const kind = String(media?.kind ?? row?.kind ?? '').trim().toLowerCase();
+            const playlists = Array.isArray(media?.playlists) ? media.playlists : Array.isArray(row?.playlists) ? row.playlists : [];
+            const probe = `${title} ${artist} ${filename} ${kind} ${playlists.map(p => p?.name || '').join(' ')}`.toLowerCase();
+            const isJingle = kind === 'jingle' || probe.includes('jingle');
+            return { id, title, artist, filename, isJingle };
+          }
+
+          const tracks = rows.map(normalize).filter(x => x.id && !x.isJingle);
+          const byId = new Map(tracks.map(x => [x.id, x]));
+          const currentIds = [...byId.keys()].sort((a,b) => Number(a) - Number(b));
+
+          const stateFile = '.vmradio-new-music-state/known.json';
+          let previous = null;
+          if (fs.existsSync(stateFile)) {
+            try {
+              const old = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+              if (Array.isArray(old?.ids)) previous = old.ids.map(String);
+            } catch {}
+          }
+
+          if (previous === null) {
+            fs.writeFileSync(stateFile, JSON.stringify({ ids: currentIds, initialized_at: new Date().toISOString() }, null, 2));
+            fs.writeFileSync('/tmp/new-tracks.json', JSON.stringify([], null, 2));
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, 'initialized=true\nnew_count=0\n');
+            console.log(`Initialisation: ${currentIds.length} ID(s) mémorisés. Aucune notification envoyée.`);
+            process.exit(0);
+          }
+
+          const known = new Set(previous);
+          const fresh = currentIds.filter(id => !known.has(id)).map(id => byId.get(id));
+
+          fs.writeFileSync('/tmp/new-tracks.json', JSON.stringify(fresh, null, 2));
+          fs.writeFileSync(stateFile, JSON.stringify({ ids: currentIds, updated_at: new Date().toISOString() }, null, 2));
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `initialized=false\nnew_count=${fresh.length}\n`);
+
+          console.log(`Nouveaux IDs détectés: ${fresh.length}`);
+          for (const t of fresh) console.log(`#${t.id} ${t.title} — ${t.artist}`);
+          NODE
+
+      - name: Envoyer une notification pour chaque nouvel ID
+        if: steps.detect.outputs.new_count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          node <<'NODE' > /tmp/new-tracks.ndjson
+          const fs = require('fs');
+          const tracks = JSON.parse(fs.readFileSync('/tmp/new-tracks.json', 'utf8'));
+          for (const track of tracks) console.log(JSON.stringify(track));
+          NODE
+
+          while IFS= read -r TRACK; do
+            [ -z "$TRACK" ] && continue
+            ID="$(node -e 'const x=JSON.parse(process.argv[1]);process.stdout.write(String(x.id||""))' "$TRACK")"
+            TITLE="$(node -e 'const x=JSON.parse(process.argv[1]);process.stdout.write(String(x.title||"Nouvelle Musique"))' "$TRACK")"
+            ARTIST="$(node -e 'const x=JSON.parse(process.argv[1]);process.stdout.write(String(x.artist||"Music IA By Valentin"))' "$TRACK")"
+
+            gh api \
+              --method POST \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "/repos/${GITHUB_REPOSITORY}/dispatches" \
+              -f event_type='new_music' \
+              -f "client_payload[id]=${ID}" \
+              -f "client_payload[title]=${TITLE}" \
+              -f "client_payload[artist]=${ARTIST}"
+
+            echo "Notification demandée pour ID ${ID}: ${TITLE} — ${ARTIST}"
+          done < /tmp/new-tracks.ndjson
+
+      - name: Sauvegarder les IDs connus
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .vmradio-new-music-state
+          key: vmradio-new-music-v2-${{ github.run_id }}
