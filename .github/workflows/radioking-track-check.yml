@@ -3,7 +3,6 @@ name: RadioKing - Détection du titre en cours
 on:
   workflow_dispatch:
   schedule:
-    # Toutes les 5 minutes, décalé de 2 minutes pour éviter le pic de charge au début de l'heure.
     - cron: '2-59/5 * * * *'
 
 permissions:
@@ -50,50 +49,17 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .radioking-state
-
           CURRENT_ID="$(node -e "const d=require('./track.json'); const x=Array.isArray(d)?d[0]:(d.track||d.data?.track||d); process.stdout.write(String(x?.id ?? x?.track_id ?? x?.title ?? ''))")"
           CURRENT_ARTIST="$(node -e "const d=require('./track.json'); const x=Array.isArray(d)?d[0]:(d.track||d.data?.track||d); process.stdout.write(String(x?.artist ?? ''))")"
           CURRENT_TITLE="$(node -e "const d=require('./track.json'); const x=Array.isArray(d)?d[0]:(d.track||d.data?.track||d); process.stdout.write(String(x?.title ?? x?.name ?? ''))")"
-
           NEXT_ID="$(node -e "const d=require('./next.json'); const x=Array.isArray(d)?d[0]:(d.track||d.data?.track||d); process.stdout.write(String(x?.id ?? x?.track_id ?? x?.title ?? ''))")"
-          NEXT_ARTIST="$(node -e "const d=require('./next.json'); const x=Array.isArray(d)?d[0]:(d.track||d.data?.track||d); process.stdout.write(String(x?.artist ?? ''))")"
-          NEXT_TITLE="$(node -e "const d=require('./next.json'); const x=Array.isArray(d)?d[0]:(d.track||d.data?.track||d); process.stdout.write(String(x?.title ?? x?.name ?? ''))")"
-
-          LAST_ID=""
-          if [ -f .radioking-state/last_track_id.txt ]; then
-            LAST_ID="$(cat .radioking-state/last_track_id.txt)"
-          fi
-
-          LAST_NEXT_ID=""
-          if [ -f .radioking-state/last_next_track_id.txt ]; then
-            LAST_NEXT_ID="$(cat .radioking-state/last_next_track_id.txt)"
-          fi
-
-          echo "Dernier ID connu : ${LAST_ID:-aucun}"
-          echo "ID actuel       : ${CURRENT_ID:-inconnu}"
-          echo "Artiste         : ${CURRENT_ARTIST:-inconnu}"
-          echo "Titre           : ${CURRENT_TITLE:-inconnu}"
-          echo "ID À suivre     : ${NEXT_ID:-inconnu}"
-          echo "À suivre        : ${NEXT_TITLE:-inconnu} — ${NEXT_ARTIST:-inconnu}"
-
-          if [ -z "$CURRENT_ID" ]; then
+          LAST_ID=""; [ -f .radioking-state/last_track_id.txt ] && LAST_ID="$(cat .radioking-state/last_track_id.txt)"
+          if [ -z "$CURRENT_ID" ] || [ "$CURRENT_ID" = "$LAST_ID" ]; then
             echo "new_track=false" >> "$GITHUB_OUTPUT"
-            echo "⚠️ Aucun ID RadioKing reçu. Aucun déclenchement."
-            exit 0
-          fi
-
-          if [ "$CURRENT_ID" = "$LAST_ID" ]; then
-            echo "new_track=false" >> "$GITHUB_OUTPUT"
-            echo "⏭️ Même titre qu'au dernier passage : aucune nouvelle publication."
           else
             echo "new_track=true" >> "$GITHUB_OUTPUT"
-            if [ -n "$LAST_NEXT_ID" ] && [ "$CURRENT_ID" = "$LAST_NEXT_ID" ]; then
-              echo "🎵 Le titre précédemment À suivre est maintenant en cours."
-            else
-              echo "🎵 Nouveau titre détecté !"
-            fi
+            echo "Titre en cours changé : ${CURRENT_TITLE} — ${CURRENT_ARTIST}"
           fi
-
           printf '%s' "$CURRENT_ID" > .radioking-state/last_track_id.txt
           printf '%s' "$NEXT_ID" > .radioking-state/last_next_track_id.txt
 
@@ -103,20 +69,12 @@ jobs:
         run: |
           set -euo pipefail
           node <<'NODE'
-          const fs = require('fs');
-          const d = require('./track.json');
-          const x = Array.isArray(d) ? d[0] : (d.track || d.data?.track || d);
-          const out = {
-            id: x?.id ?? x?.track_id ?? '',
-            title: x?.title ?? x?.name ?? '',
-            artist: x?.artist ?? '',
-            started_at: x?.started_at ?? null,
-            end_at: x?.end_at ?? null,
-            cover: x?.cover ?? x?.cover_url ?? x?.image ?? '',
-            updated_at: new Date().toISOString()
-          };
-          fs.mkdirSync('data', { recursive: true });
-          fs.writeFileSync('data/radioking-latest.json', JSON.stringify(out, null, 2) + '\n');
+          const fs=require('fs');
+          const d=require('./track.json');
+          const x=Array.isArray(d)?d[0]:(d.track||d.data?.track||d);
+          const out={id:x?.id??x?.track_id??'',title:x?.title??x?.name??'',artist:x?.artist??'',started_at:x?.started_at??null,end_at:x?.end_at??null,cover:x?.cover??x?.cover_url??x?.image??'',updated_at:new Date().toISOString()};
+          fs.mkdirSync('data',{recursive:true});
+          fs.writeFileSync('data/radioking-latest.json',JSON.stringify(out,null,2)+'\n');
           NODE
 
       - name: Publier dans Infos en temps réel
@@ -127,27 +85,9 @@ jobs:
           git config user.name 'VM RADIO Bot'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add data/radioking-latest.json
-          if git diff --cached --quiet; then
-            echo 'Aucune modification à publier.'
-            exit 0
-          fi
+          if git diff --cached --quiet; then exit 0; fi
           git commit -m 'Mise à jour Infos en temps réel - RadioKing'
           git push
-
-      - name: Déclencher la notification nouvelle musique
-        if: steps.detect.outputs.new_track == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          gh api \
-            --method POST \
-            -H 'Accept: application/vnd.github+json' \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            "/repos/${GITHUB_REPOSITORY}/dispatches" \
-            -f event_type='new_music'
-          echo '🔔 Événement new_music envoyé au workflow de notification.'
 
       - name: Mémoriser le titre pour les prochaines exécutions
         if: always()
@@ -158,4 +98,4 @@ jobs:
 
       - name: Résultat
         if: steps.detect.outputs.new_track == 'true'
-        run: echo '🔔 Nouveau titre publié dans Infos en temps réel et notification FCM déclenchée.'
+        run: echo 'Titre en cours mis à jour. Aucune notification nouvelle musique n est envoyée ici.'
