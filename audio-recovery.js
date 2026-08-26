@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const STREAM_URL = 'https://play.radioking.io/vm-radio2';
+  const STREAM_URL = 'https://radio.vmradio.fr/radio.mp3';
   const AUDIO_SELECTORS = ['#audio', 'audio'];
   const KEY = 'vmradio-audio-wanted';
   const STALL_DELAY = 9000;

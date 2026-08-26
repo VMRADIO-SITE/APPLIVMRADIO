@@ -1627,7 +1627,8 @@ function titleFirstUpper(v){
   margin-right:55px!important;
 }
 </style>
-<link rel="icon" type="image/png" href="./favicon-64.png?v=6"><link rel="apple-touch-icon" href="./apple-touch-icon.png?v=6"></head>
+<link rel="icon" type="image/png" href="./favicon-64.png?v=6"><link rel="apple-touch-icon" href="./apple-touch-icon.png?v=6"><script src="vm-radio-flux-central.js"></script>
+</head>
 <body>
 <div id="vmWelcomeSplash" aria-label="Bienvenue sur l’appli">
   <div class="vmWelcomeCard">
@@ -1733,7 +1734,7 @@ function titleFirstUpper(v){
   <script>
   (function(){
     const radio={
-      stream:"https://play.radioking.io/vm-radio2",
+      stream:"https://radio.vmradio.fr/radio.mp3",
       current:"https://api.radioking.io/widget/radio/vm-radio2/track/current",
       next:"https://api.radioking.io/widget/radio/vm-radio2/track/next?limit=1",
       fallback:"https://valentinrasle7070vr-debug.github.io/VM-RADIO/assets/vm-radio-default-cover.jpeg"
@@ -1741,7 +1742,7 @@ function titleFirstUpper(v){
     const $=id=>document.getElementById(id),audio=$("audio"),play=$("play"),heart=$("heart"),mute=$("mute"),notice=$("notice");
     let deferredPrompt=null;
     let previousTrack={title:"Titre précédent",artist:"Artiste"};
-    audio.src="https://play.radioking.io/vm-radio2";
+    audio.src="https://radio.vmradio.fr/radio.mp3";
     audio.volume=.85;
 
     function message(text){notice.textContent=text;notice.classList.add("show");setTimeout(()=>notice.classList.remove("show"),3200)}
@@ -1910,7 +1911,7 @@ setInterval(update,10000);
   function init(){
     const a=document.getElementById("audio");
     if(!a)return;
-    const stream="https://play.radioking.io/vm-radio2";
+    const stream="https://radio.vmradio.fr/radio.mp3";
     if(!a.src || a.src.indexOf("radioking.io")===-1) a.src=stream;
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});
@@ -2395,7 +2396,7 @@ async function resumeRadioFromMediaControl(){
     await audio.play();
   }catch(firstError){
     try{
-      const currentSrc = audio.currentSrc || audio.src || "https://play.radioking.io/vm-radio2";
+      const currentSrc = audio.currentSrc || audio.src || "https://radio.vmradio.fr/radio.mp3";
       audio.src = currentSrc;
       audio.load();
       await audio.play();
