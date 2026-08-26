@@ -1,4 +1,4 @@
-/* VM RADIO — source unique moteur + flux v7 */
+/* VM RADIO — source unique moteur + flux v8 */
 (function(){
 'use strict';
 const ENGINE='https://admin.vmradio.fr/api/radio/nowplaying';
@@ -6,8 +6,8 @@ const STREAM='https://radio.vmradio.fr/listen/vm_radio/radio.mp3';
 const DEFAULT_ARTIST='Music IA By Valentin';
 const REFRESH=1000;
 window.__VMRADIO_STREAM_URL__=STREAM;
-if(window.__VMRADIO_CENTRAL_V7__)return;
-window.__VMRADIO_CENTRAL_V7__=true;
+if(window.__VMRADIO_CENTRAL_V8__)return;
+window.__VMRADIO_CENTRAL_V8__=true;
 
 const nativeFetch=window.fetch.bind(window);
 const liveAudio=new Audio(STREAM);
@@ -28,6 +28,7 @@ function track(song,meta){
     artist:String(first(song.artist,song.artist_name)||DEFAULT_ARTIST).trim(),
     cover:String(first(song.art,song.cover,song.cover_url,song.artwork,song.artwork_url)||''),
     time:first(meta?.played_at,meta?.started_at,meta?.time),
+    duration:Number(first(meta?.duration,song?.duration,0))||0,
     type:meta?.is_request===true?'request':playlist.includes('jingle')?'jingle':'music'
   };
 }
@@ -41,53 +42,46 @@ async function getEngineRaw(){
 function legacyItem(meta){
   const song=meta?.song||{};
   const art=first(song.art,song.cover,song.cover_url,song.artwork,song.artwork_url);
-  return {
-    id:first(song.id,song.track_id,song.title),
-    title:first(song.title,song.name),
-    artist:first(song.artist,song.artist_name,DEFAULT_ARTIST),
-    cover:art,
-    cover_url:art,
-    artwork:art,
-    started_at:first(meta?.played_at,meta?.started_at,meta?.time),
-    played_at:first(meta?.played_at,meta?.started_at,meta?.time),
-    duration:Number(meta?.duration||song?.duration||0)||0
-  };
+  return {id:first(song.id,song.track_id,song.title),title:first(song.title,song.name),artist:first(song.artist,song.artist_name,DEFAULT_ARTIST),cover:art,cover_url:art,artwork:art,started_at:first(meta?.played_at,meta?.started_at,meta?.time),played_at:first(meta?.played_at,meta?.started_at,meta?.time),duration:Number(meta?.duration||song?.duration||0)||0};
 }
 
 window.fetch=async function(input,init){
   const url=typeof input==='string'?input:String(input?.url||'');
   if(/api\.radioking\.io\/widget\/radio\/vm-radio2\/track\//i.test(url)){
     try{
-      const d=await getEngineRaw();
-      let payload;
+      const d=await getEngineRaw();let payload;
       if(url.includes('/next'))payload=d?.playing_next?.song?[legacyItem(d.playing_next)]:[];
       else if(url.includes('/ckoi'))payload=(Array.isArray(d?.song_history)?d.song_history:[]).map(legacyItem);
       else payload=legacyItem(d?.now_playing||{});
       return new Response(JSON.stringify(payload),{status:200,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
-    }catch(e){
-      console.warn('VM RADIO compatibilité anciennes données',e);
-      return new Response(JSON.stringify(url.includes('/next')||url.includes('/ckoi')?[]:{}),{status:200,headers:{'Content-Type':'application/json'}});
-    }
+    }catch(e){console.warn('VM RADIO compatibilité anciennes données',e);return new Response(JSON.stringify(url.includes('/next')||url.includes('/ckoi')?[]:{}),{status:200,headers:{'Content-Type':'application/json'}})}
   }
   return nativeFetch(input,init);
 };
 
 function setText(sel,value){const v=String(value??'');document.querySelectorAll(sel).forEach(el=>{if(el.textContent!==v)el.textContent=v})}
-function setImage(sel,value){
-  if(!value)return;
-  const v=String(value);
-  document.querySelectorAll(sel).forEach(el=>{
-    if(el.tagName!=='IMG')return;
-    el.dataset.vmDesiredCover=v;
-    if((el.getAttribute('src')||'')===v)return;
-    const probe=new Image();
-    probe.onload=()=>{if(el.dataset.vmDesiredCover===v)el.setAttribute('src',v)};
-    probe.src=v;
-  });
+function setImage(sel,value){if(!value)return;const v=String(value);document.querySelectorAll(sel).forEach(el=>{if(el.tagName!=='IMG')return;el.dataset.vmDesiredCover=v;if((el.getAttribute('src')||'')===v)return;const probe=new Image();probe.onload=()=>{if(el.dataset.vmDesiredCover===v)el.setAttribute('src',v)};probe.src=v})}
+function protectImages(){const fix=el=>{if(el?.tagName!=='IMG')return;const v=el.dataset.vmDesiredCover;if(v&&(el.getAttribute('src')||'')!==v)el.setAttribute('src',v)};new MutationObserver(list=>{for(const m of list)fix(m.target)}).observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['src']})}
+
+function ensureNextTime(){
+  let el=document.querySelector('[data-next-time],#nextTime');
+  if(el)return el;
+  const next=document.querySelector('.now-next .next,.next');
+  const info=next?.querySelector('div');
+  if(!info)return null;
+  const row=document.createElement('span');
+  row.style.cssText='color:#aaa2b5;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+  row.innerHTML='Diffusion prévue à <strong id="nextTime" data-next-time style="color:#d68cff;font-weight:800">--:--</strong>';
+  info.appendChild(row);
+  return row.querySelector('[data-next-time]');
 }
-function protectImages(){
-  const fix=el=>{if(el?.tagName!=='IMG')return;const v=el.dataset.vmDesiredCover;if(v&&(el.getAttribute('src')||'')!==v)el.setAttribute('src',v)};
-  new MutationObserver(list=>{for(const m of list)fix(m.target)}).observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['src']});
+
+function nextBroadcastTime(current,next){
+  if(next?.time)return next.time;
+  if(!current?.time||!current?.duration)return '';
+  const start=typeof current.time==='number'?new Date(current.time*1000):new Date(current.time);
+  if(Number.isNaN(start.getTime()))return '';
+  return new Date(start.getTime()+current.duration*1000).toISOString();
 }
 
 function render(current,next,history){
@@ -98,71 +92,26 @@ function render(current,next,history){
   setImage('[data-current-cover],#currentCover,#cover,.current-cover,.cover-wrap img',current.cover);
 
   if(next){
+    ensureNextTime();
+    const nextAt=nextBroadcastTime(current,next);
     setText('[data-next-title],#nextTitle,#programNext,.next-title,#nextTrackTitle',next.title);
     setText('[data-next-artist],#nextArtist,.next-artist,#nextTrackArtist',next.artist);
-    setText('[data-next-time],#nextTime,.next-time',clock(next.time));
+    setText('[data-next-time],#nextTime,.next-time',clock(nextAt));
     setImage('[data-next-cover],#nextCover,.next-cover,.next-card img,#nextTrackCover',next.cover);
   }
 
-  const previous=(history||[]).filter(x=>x&&x.id!==current.id&&x.type==='music').slice(0,3);
-  const last=previous[0];
-  if(last){
-    setText('[data-news-last],#previousTitle,#programPrevious',last.title);
-    setText('[data-news-last-artist],#previousArtist',last.artist);
-    setText('[data-news-last-time]',clock(last.time));
-    setImage('[data-news-last-cover],#previousCover',last.cover);
-  }
-
+  const previous=(history||[]).filter(x=>x&&x.id!==current.id&&x.type==='music').slice(0,3);const last=previous[0];
+  if(last){setText('[data-news-last],#previousTitle,#programPrevious',last.title);setText('[data-news-last-artist],#previousArtist',last.artist);setText('[data-news-last-time]',clock(last.time));setImage('[data-news-last-cover],#previousCover',last.cover)}
   try{if('mediaSession'in navigator)navigator.mediaSession.metadata=new MediaMetadata({title:current.title||'VM RADIO',artist:current.artist||DEFAULT_ARTIST,album:'VM RADIO',artwork:current.cover?[{src:current.cover}]:[]})}catch(_){ }
 }
 
 let refreshing=false;
-async function refresh(){
-  if(refreshing)return;
-  refreshing=true;
-  try{
-    const d=await getEngineRaw();
-    render(track(d?.now_playing?.song,d?.now_playing),track(d?.playing_next?.song,d?.playing_next),(Array.isArray(d?.song_history)?d.song_history:[]).map(x=>track(x?.song,x)).filter(Boolean));
-  }catch(e){console.warn('VM RADIO moteur indisponible',e)}
-  finally{refreshing=false}
-}
+async function refresh(){if(refreshing)return;refreshing=true;try{const d=await getEngineRaw();render(track(d?.now_playing?.song,d?.now_playing),track(d?.playing_next?.song,d?.playing_next),(Array.isArray(d?.song_history)?d.song_history:[]).map(x=>track(x?.song,x)).filter(Boolean))}catch(e){console.warn('VM RADIO moteur indisponible',e)}finally{refreshing=false}}
 
-function syncPlayer(){
-  const playing=!liveAudio.paused&&!liveAudio.ended;
-  document.querySelectorAll('#play,#playBtn,.play-btn,[data-play-player]').forEach(btn=>{
-    btn.setAttribute('aria-label',playing?'Mettre en pause':'Écouter VM RADIO');
-    btn.classList.toggle('is-playing',playing);
-    if(btn.id==='play'&&!btn.querySelector('svg'))btn.textContent=playing?'⏸':'▶';
-  });
-  const path=document.getElementById('playPausePath');
-  if(path)path.setAttribute('d',playing?'M7 5h4v14H7zm6 0h4v14H13z':'M8 5.2v13.6L19 12 8 5.2z');
-  const status=document.getElementById('statusText')||document.querySelector('[data-player-status]');
-  if(status)status.textContent=playing?'EN DIRECT':'PRÊT À ÉCOUTER';
-}
-
-async function togglePlayer(e){
-  const btn=e.target?.closest?.('#play,#playBtn,.play-btn,[data-play-player]');
-  if(!btn)return;
-  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-  if(!liveAudio.paused){liveAudio.pause();syncPlayer();return}
-  try{liveAudio.src=STREAM;await liveAudio.play();syncPlayer()}catch(err){console.warn('VM RADIO lecture impossible',err)}
-}
-
+function syncPlayer(){const playing=!liveAudio.paused&&!liveAudio.ended;document.querySelectorAll('#play,#playBtn,.play-btn,[data-play-player]').forEach(btn=>{btn.setAttribute('aria-label',playing?'Mettre en pause':'Écouter VM RADIO');btn.classList.toggle('is-playing',playing);if(btn.id==='play'&&!btn.querySelector('svg'))btn.textContent=playing?'⏸':'▶'});const path=document.getElementById('playPausePath');if(path)path.setAttribute('d',playing?'M7 5h4v14H7zm6 0h4v14H13z':'M8 5.2v13.6L19 12 8 5.2z');const status=document.getElementById('statusText')||document.querySelector('[data-player-status]');if(status)status.textContent=playing?'EN DIRECT':'PRÊT À ÉCOUTER'}
+async function togglePlayer(e){const btn=e.target?.closest?.('#play,#playBtn,.play-btn,[data-play-player]');if(!btn)return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();if(!liveAudio.paused){liveAudio.pause();syncPlayer();return}try{liveAudio.src=STREAM;await liveAudio.play();syncPlayer()}catch(err){console.warn('VM RADIO lecture impossible',err)}}
 document.addEventListener('click',togglePlayer,true);
 
-function init(){
-  protectImages();
-  document.querySelectorAll('audio').forEach(a=>{try{a.pause();a.removeAttribute('src');a.load()}catch(_){}});
-  liveAudio.addEventListener('play',syncPlayer);
-  liveAudio.addEventListener('playing',syncPlayer);
-  liveAudio.addEventListener('pause',syncPlayer);
-  const volume=document.getElementById('volume');
-  if(volume){liveAudio.volume=Number(volume.value||0.85);volume.addEventListener('input',()=>{liveAudio.volume=Number(volume.value)})}
-  window.VMRadioPlayer={play:()=>liveAudio.play(),pause:()=>liveAudio.pause(),stream:STREAM,audio:liveAudio};
-  syncPlayer();refresh();setInterval(refresh,REFRESH);
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
-  window.addEventListener('focus',refresh);
-}
-
+function init(){protectImages();ensureNextTime();document.querySelectorAll('audio').forEach(a=>{try{a.pause();a.removeAttribute('src');a.load()}catch(_){}});liveAudio.addEventListener('play',syncPlayer);liveAudio.addEventListener('playing',syncPlayer);liveAudio.addEventListener('pause',syncPlayer);const volume=document.getElementById('volume');if(volume){liveAudio.volume=Number(volume.value||0.85);volume.addEventListener('input',()=>{liveAudio.volume=Number(volume.value)})}window.VMRadioPlayer={play:()=>liveAudio.play(),pause:()=>liveAudio.pause(),stream:STREAM,audio:liveAudio};syncPlayer();refresh();setInterval(refresh,REFRESH);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});window.addEventListener('focus',refresh)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
