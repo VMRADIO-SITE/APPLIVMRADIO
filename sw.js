@@ -31,7 +31,7 @@ messaging.onBackgroundMessage(payload => {
 });
 
 // v32 : envoi des dédicaces fiabilisé sans pré-vérification réseau.
-const CACHE_NAME = "vm-radio-app-v33";
+const CACHE_NAME = "vm-radio-app-v34";
 const APP_SHELL = [
   "./",
   "./index.html",
