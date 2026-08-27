@@ -31,7 +31,7 @@ messaging.onBackgroundMessage(payload => {
 });
 
 // v32 : envoi des dédicaces fiabilisé sans pré-vérification réseau.
-const CACHE_NAME = "vm-radio-app-v40";
+const CACHE_NAME = "vm-radio-app-v41";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -44,7 +44,7 @@ const APP_SHELL = [
   "./vmradio-app-icon-512.png",
   "./manifest.webmanifest",
   "./notifications.js",
-  "./dedications-feed.js?v=2",
+  "./dedications-feed.js?v=3",
   "./fcm-token-sync.js",
   "./audio-recovery.js",
   "./pwa-install-tracker.js?v=2"
@@ -112,7 +112,7 @@ self.addEventListener("fetch", event => {
             injected = injected.replace(/<\/head>/i, '<style id="vm-radio-no-pinch-zoom">html,body{touch-action:pan-x pan-y;overscroll-behavior-x:none}body{-webkit-text-size-adjust:100%}button,a,input,select,textarea{touch-action:manipulation}</style></head>');
           }
 
-          if (!injected.includes("./dedications-feed.js")) injected = injected.replace(/<\/body>/i, '<script src="./dedications-feed.js?v=2"></script></body>');
+          if (!injected.includes("./dedications-feed.js")) injected = injected.replace(/<\/body>/i, '<script src="./dedications-feed.js?v=3"></script></body>');
           if (!injected.includes("./notifications.js")) injected = injected.replace(/<\/body>/i, '<script type="module" src="./notifications.js?v=vm27"></script></body>');
           if (!injected.includes("./fcm-token-sync.js")) injected = injected.replace(/<\/body>/i, '<script type="module" src="./fcm-token-sync.js?v=1"></script></body>');
           if (!injected.includes("./audio-recovery.js")) injected = injected.replace(/<\/body>/i, '<script src="./audio-recovery.js?v=3"></script></body>');
