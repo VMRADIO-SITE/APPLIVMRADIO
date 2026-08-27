@@ -30,8 +30,8 @@ messaging.onBackgroundMessage(payload => {
   self.registration.showNotification(title, { body, icon, badge: icon, tag, data: { url: link } });
 });
 
-// v28 : actualisation des heures du direct et du titre suivant.
-const CACHE_NAME = "vm-radio-app-v28";
+// v29 : correction Firebase des dédicaces dans l’application.
+const CACHE_NAME = "vm-radio-app-v29";
 const APP_SHELL = [
   "./",
   "./index.html",
