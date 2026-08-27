@@ -107,8 +107,12 @@ function renderRequester(kind,item){
   });
 
   // Les pages récentes possèdent déjà un emplacement dédié.
-  // Ne pas créer un deuxième libellé près de l'artiste.
-  if(explicitTargets.length)return;
+  // Supprimer aussi tout ancien libellé injecté par une version précédente.
+  if(explicitTargets.length){
+    document.querySelectorAll('.vm-requester-'+kind)
+      .forEach(el=>el.remove());
+    return;
+  }
 
   const anchors=current
     ? '[data-current-artist],#currentArtist,#artist,.current-artist,.artist'
