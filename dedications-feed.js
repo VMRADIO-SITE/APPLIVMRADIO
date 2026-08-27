@@ -349,7 +349,12 @@
     if (!document.hidden) refresh();
   });
 
-  new MutationObserver(function () { render(); }).observe(document.documentElement, {
+  // Les pages de l'application sont injectées sans rechargement pour garder
+  // le direct audio. Rebranche immédiatement le formulaire qui vient d'être ajouté.
+  new MutationObserver(function () {
+    bindForm();
+    render();
+  }).observe(document.documentElement, {
     childList: true,
     subtree: true
   });
