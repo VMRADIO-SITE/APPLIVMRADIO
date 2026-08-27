@@ -31,7 +31,7 @@ messaging.onBackgroundMessage(payload => {
 });
 
 // v32 : envoi des dédicaces fiabilisé sans pré-vérification réseau.
-const CACHE_NAME = "vm-radio-app-v39";
+const CACHE_NAME = "vm-radio-app-v40";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -51,7 +51,7 @@ const APP_SHELL = [
 ];
 
 self.addEventListener("install", event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)));
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", event => {
