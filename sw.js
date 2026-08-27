@@ -30,8 +30,8 @@ messaging.onBackgroundMessage(payload => {
   self.registration.showNotification(title, { body, icon, badge: icon, tag, data: { url: link } });
 });
 
-// v30 : secours Firebase authentifié pour les dédicaces.
-const CACHE_NAME = "vm-radio-app-v30";
+// v31 : dédicaces synchronisées via l’API centrale VM RADIO.
+const CACHE_NAME = "vm-radio-app-v31";
 const APP_SHELL = [
   "./",
   "./index.html",
