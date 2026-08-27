@@ -1,4 +1,4 @@
-/* VM RADIO — source unique moteur + flux v9 */
+/* VM RADIO — source unique moteur + flux v10 */
 (function(){
 'use strict';
 const ENGINE='https://admin.vmradio.fr/api/radio/nowplaying';
@@ -6,8 +6,8 @@ const STREAM='https://radio.vmradio.fr/listen/vm_radio/radio.mp3';
 const DEFAULT_ARTIST='Music IA By Valentin';
 const REFRESH=1000;
 window.__VMRADIO_STREAM_URL__=STREAM;
-if(window.__VMRADIO_CENTRAL_V9__)return;
-window.__VMRADIO_CENTRAL_V9__=true;
+if(window.__VMRADIO_CENTRAL_V10__)return;
+window.__VMRADIO_CENTRAL_V10__=true;
 
 const nativeFetch=window.fetch.bind(window);
 const liveAudio=new Audio(STREAM);
@@ -39,10 +39,25 @@ async function getEngineRaw(){
   return r.json();
 }
 
+function isoTime(value){
+  if(!value)return '';
+  const d=typeof value==='number'?new Date(value*1000):new Date(value);
+  return Number.isNaN(d.getTime())?'':d.toISOString();
+}
+
+function legacyNextTime(data){
+  const explicit=first(data?.playing_next?.played_at,data?.playing_next?.started_at,data?.playing_next?.time);
+  if(explicit)return explicit;
+  const played=Number(first(data?.now_playing?.played_at,data?.now_playing?.started_at,data?.now_playing?.time,0));
+  const duration=Number(first(data?.now_playing?.duration,data?.now_playing?.song?.duration,0));
+  return played>0&&duration>0?played+duration:'';
+}
+
 function legacyItem(meta){
   const song=meta?.song||{};
   const art=first(song.art,song.cover,song.cover_url,song.artwork,song.artwork_url);
-  return {id:first(song.id,song.track_id,song.title),title:first(song.title,song.name),artist:first(song.artist,song.artist_name,DEFAULT_ARTIST),cover:art,cover_url:art,artwork:art,started_at:first(meta?.played_at,meta?.started_at,meta?.time),played_at:first(meta?.played_at,meta?.started_at,meta?.time),duration:Number(meta?.duration||song?.duration||0)||0};
+  const time=isoTime(first(meta?.played_at,meta?.started_at,meta?.time));
+  return {id:first(song.id,song.track_id,song.title),title:first(song.title,song.name),artist:first(song.artist,song.artist_name,DEFAULT_ARTIST),cover:art,cover_url:art,artwork:art,started_at:time,played_at:time,duration:Number(meta?.duration||song?.duration||0)||0};
 }
 
 window.fetch=async function(input,init){
@@ -50,7 +65,10 @@ window.fetch=async function(input,init){
   if(/api\.radioking\.io\/widget\/radio\/vm-radio2\/track\//i.test(url)){
     try{
       const d=await getEngineRaw();let payload;
-      if(url.includes('/next'))payload=d?.playing_next?.song?[legacyItem(d.playing_next)]:[];
+      if(url.includes('/next')){
+        const nextMeta={...(d?.playing_next||{}),played_at:legacyNextTime(d)};
+        payload=nextMeta?.song?[legacyItem(nextMeta)]:[];
+      }
       else if(url.includes('/ckoi'))payload=(Array.isArray(d?.song_history)?d.song_history:[]).map(legacyItem);
       else payload=legacyItem(d?.now_playing||{});
       return new Response(JSON.stringify(payload),{status:200,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
