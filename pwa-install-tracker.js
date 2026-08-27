@@ -3,7 +3,7 @@
 
   const KEY = 'vmradioPwaInstallReportedV3';
   const INSTALL_ID_KEY = 'vmradioPwaInstallIdV2';
-  const ADMIN_INSTALL_ENDPOINT = 'https://vmradio-admin.valentinrasle707.workers.dev/api/pwa/install';
+  const ADMIN_INSTALL_ENDPOINT = 'https://admin.vmradio.fr/api/pwa/install';
 
   function isVmRadioApp() {
     return location.hostname === 'app.vmradio.fr' || location.hostname === 'www.app.vmradio.fr';
