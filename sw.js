@@ -30,8 +30,8 @@ messaging.onBackgroundMessage(payload => {
   self.registration.showNotification(title, { body, icon, badge: icon, tag, data: { url: link } });
 });
 
-// v27 : cache et relais d'installation PWA fiabilisés.
-const CACHE_NAME = "vm-radio-app-v27";
+// v28 : actualisation des heures du direct et du titre suivant.
+const CACHE_NAME = "vm-radio-app-v28";
 const APP_SHELL = [
   "./",
   "./index.html",
