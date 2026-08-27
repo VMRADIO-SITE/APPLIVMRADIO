@@ -30,8 +30,8 @@ messaging.onBackgroundMessage(payload => {
   self.registration.showNotification(title, { body, icon, badge: icon, tag, data: { url: link } });
 });
 
-// v29 : correction Firebase des dédicaces dans l’application.
-const CACHE_NAME = "vm-radio-app-v29";
+// v30 : secours Firebase authentifié pour les dédicaces.
+const CACHE_NAME = "vm-radio-app-v30";
 const APP_SHELL = [
   "./",
   "./index.html",
