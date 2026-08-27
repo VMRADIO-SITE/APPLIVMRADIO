@@ -30,8 +30,8 @@ messaging.onBackgroundMessage(payload => {
   self.registration.showNotification(title, { body, icon, badge: icon, tag, data: { url: link } });
 });
 
-// v31 : dédicaces synchronisées via l’API centrale VM RADIO.
-const CACHE_NAME = "vm-radio-app-v31";
+// v32 : envoi des dédicaces fiabilisé sans pré-vérification réseau.
+const CACHE_NAME = "vm-radio-app-v32";
 const APP_SHELL = [
   "./",
   "./index.html",
