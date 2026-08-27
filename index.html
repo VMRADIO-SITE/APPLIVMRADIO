@@ -1756,7 +1756,7 @@ function titleFirstUpper(v){
     function track(raw){let x=Array.isArray(raw)?raw[0]:raw;if(x&&x.track)x=x.track;if(x&&x.data&&x.data.track)x=x.data.track;if(!x)return null;return{title:x.title||x.name||x.song||"VM Radio",artist:x.artist||x.author||"Music IA By Valentin",cover:x.cover||x.cover_url||x.artwork||x.image||radio.fallback,time:x.started_at||x.start_at||x.played_at||null}}
     function img(el,url){el.src=url||radio.fallback;el.onerror=()=>{el.onerror=null;el.src=radio.fallback}}
     async function refresh(){try{const[a,b]=await Promise.all([fetch(radio.current,{cache:"no-store"}),fetch(radio.next,{cache:"no-store"})]);const now=track(await a.json()),next=track(await b.json());if(now){previousTrack={title:$("title").textContent||"Titre précédent",artist:$("artist").textContent||"Artiste"};$("programPrevious").textContent=titleFirstUpper(previousTrack.title);$("programPreviousArtist").textContent=previousTrack.artist;if($("cover").src)$("programPreviousCover").src=$("cover").src;$("title").textContent=titleFirstUpper(now.title);$("artist").textContent=now.artist;$("programCurrent").textContent=titleFirstUpper(now.title);$("programCurrentArtist").textContent=now.artist;img($("programCurrentCover"),now.cover);img($("cover"),now.cover);if(now.time){const t=new Date(now.time);$("started").textContent=Number.isNaN(t.getTime())?"En direct":"Depuis "+t.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}}if(next){$("nextTitle").textContent=next.title;$("programNext").textContent=titleFirstUpper(next.title);img($("nextCover"),next.cover)}}catch(e){console.warn("VM Radio",e)}}
-    refresh();setInterval(refresh,10000);
+    if(!window.__VMRADIO_CENTRAL_V10__){refresh();setInterval(refresh,10000);}
 
     document.querySelectorAll(".program-tab").forEach(tab=>{
       tab.addEventListener("click",()=>{
@@ -1898,8 +1898,7 @@ async function update(){
  }
  render(cur,next,hist);
 }
-update();
-setInterval(update,10000);
+if(!window.__VMRADIO_CENTRAL_V10__){update();setInterval(update,10000);}
 })();
 </script>
 
