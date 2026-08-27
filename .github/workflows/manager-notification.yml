@@ -1,0 +1,131 @@
+name: VM RADIO - Notification depuis le Manager
+
+on:
+  repository_dispatch:
+    types:
+      - manual_notification
+  workflow_dispatch:
+    inputs:
+      title:
+        description: Titre de la notification
+        required: true
+        default: VM RADIO
+      body:
+        description: Message
+        required: true
+      url:
+        description: Lien ouvert au clic
+        required: false
+        default: https://app.vmradio.fr/
+      category:
+        description: Catégorie
+        required: false
+        default: information
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Installer Firebase Admin SDK
+        run: npm install --no-save firebase-admin@13
+
+      - name: Envoyer la notification à l'application VM RADIO
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          PUSH_TITLE: ${{ github.event.client_payload.title || inputs.title }}
+          PUSH_BODY: ${{ github.event.client_payload.body || inputs.body }}
+          PUSH_URL: ${{ github.event.client_payload.url || inputs.url }}
+          PUSH_CATEGORY: ${{ github.event.client_payload.category || inputs.category }}
+          PUSH_SENDER: ${{ github.event.client_payload.sender }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${FIREBASE_SERVICE_ACCOUNT_JSON:-}" ]; then
+            echo "Le secret FIREBASE_SERVICE_ACCOUNT_JSON n'est pas configuré."
+            exit 1
+          fi
+
+          node <<'NODE'
+          const admin = require('firebase-admin');
+
+          const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+          admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+
+          const db = admin.firestore();
+          const messaging = admin.messaging();
+          const title = String(process.env.PUSH_TITLE || 'VM RADIO').trim().slice(0, 120);
+          const body = String(process.env.PUSH_BODY || '').trim().slice(0, 500);
+          const url = String(process.env.PUSH_URL || 'https://app.vmradio.fr/').trim();
+          const category = String(process.env.PUSH_CATEGORY || 'information').trim().slice(0, 40);
+          const sender = String(process.env.PUSH_SENDER || 'VM RADIO Manager').trim().slice(0, 120);
+          const tag = `vm-radio-manager-${category}-${Date.now()}`;
+
+          if (!body) throw new Error('Le contenu de la notification est vide.');
+
+          (async () => {
+            const snapshot = await db.collection('fcmTokens').get();
+            const docsByToken = new Map();
+            for (const doc of snapshot.docs) {
+              const token = String(doc.get('token') || '').trim();
+              if (token) docsByToken.set(token, doc);
+            }
+            const tokens = [...docsByToken.keys()];
+            let successCount = 0;
+            let failureCount = 0;
+
+            console.log(`Tokens FCM trouvés : ${tokens.length}`);
+
+            for (let i = 0; i < tokens.length; i += 500) {
+              const batch = tokens.slice(i, i + 500);
+              const response = await messaging.sendEachForMulticast({
+                tokens: batch,
+                notification: { title, body },
+                data: { type: 'manager_notification', category, title, body, url, tag },
+                webpush: {
+                  notification: {
+                    title,
+                    body,
+                    icon: 'https://app.vmradio.fr/vmradio-app-icon-192.png',
+                    badge: 'https://app.vmradio.fr/vmradio-app-icon-192.png',
+                    tag
+                  },
+                  fcmOptions: { link: url }
+                }
+              });
+
+              successCount += response.successCount;
+              failureCount += response.failureCount;
+
+              for (let j = 0; j < response.responses.length; j++) {
+                const result = response.responses[j];
+                if (result.success) continue;
+                const code = result.error?.code || '';
+                if (code.includes('registration-token-not-registered') || code.includes('invalid-registration-token')) {
+                  const stale = docsByToken.get(batch[j]);
+                  if (stale) await stale.ref.delete();
+                }
+              }
+            }
+
+            await db.collection('notificationHistory').add({
+              type: 'manager_notification',
+              category,
+              title,
+              body,
+              url,
+              sender,
+              recipients: tokens.length,
+              successCount,
+              failureCount,
+              createdAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+
+            console.log(`Notification envoyée : ${successCount} succès, ${failureCount} échecs.`);
+          })().catch(error => {
+            console.error(error);
+            process.exitCode = 1;
+          });
+          NODE
