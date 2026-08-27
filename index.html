@@ -1999,6 +1999,13 @@ async function navigate(url,push=true){
 
   setActive(name);
   if(push) history.pushState({vmRoute:name},"",url);
+
+  // Prévient les modules persistants qu'une nouvelle page vient d'être injectée.
+  // Le formulaire Dédicaces est ainsi rebranché avant toute tentative d'envoi.
+  window.dispatchEvent(new CustomEvent("vmradio:pagechange",{
+    detail:{route:name,url:new URL(url,location.href).href}
+  }));
+
   window.scrollTo({top:0,behavior:"auto"});
 }
 
@@ -2360,7 +2367,7 @@ syncNowPlaying();
 })();
 </script>
 
-<script src="dedications-feed.js?v=5"></script>
+<script src="dedications-feed.js?v=6"></script>
 </body>
 <script src="./pwa-install-tracker.js?v=20260827-2"></script>
 </body>
