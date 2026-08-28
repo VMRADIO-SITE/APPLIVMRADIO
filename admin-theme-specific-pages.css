@@ -1,0 +1,150 @@
+/* VM RADIO — derniers composants spécifiques des pages */
+:root{--vm-bg:#f2f1fa;--vm-card:#f2edff;--vm-soft:#f7f4ff;--vm-line:#e2daf3;--vm-title:#3b1468;--vm-subtitle:#c477f3;--vm-purple:#6828d8;--vm-text:#211832;--vm-muted:#756b83;--vm-shadow:0 8px 26px rgba(33,24,50,.08)}
+
+/* Contact — page Infos */
+.contact-card{
+  background:var(--vm-card)!important;
+  background-image:none!important;
+  border:1px solid var(--vm-line)!important;
+  border-radius:26px!important;
+  box-shadow:var(--vm-shadow)!important;
+  color:var(--vm-text)!important;
+}
+.contact-card h2{color:var(--vm-title)!important}
+.contact-card .contact-subtitle{color:var(--vm-subtitle)!important}
+.contact-form label{color:var(--vm-title)!important}
+.contact-form input,.contact-form textarea{
+  background:var(--vm-soft)!important;
+  color:var(--vm-text)!important;
+  border-color:var(--vm-line)!important;
+}
+.contact-help{color:var(--vm-muted)!important}
+.contact-form button{background:linear-gradient(135deg,#6828d8,#7c3aed)!important;color:#fff!important;border:0!important}
+
+/* Informations temps réel — page Infos */
+#vm-radioking-live-info{
+  background:var(--vm-card)!important;
+  background-image:none!important;
+  border:1px solid var(--vm-line)!important;
+  border-radius:26px!important;
+  box-shadow:var(--vm-shadow)!important;
+  color:var(--vm-text)!important;
+}
+.vmrk-badge{color:var(--vm-title)!important}
+.vmrk-label,.vmrk-date,.vmrk-empty{color:var(--vm-muted)!important}
+.vmrk-title{color:var(--vm-title)!important}
+.vmrk-artist{color:var(--vm-subtitle)!important}
+.vmrk-cover{border-color:var(--vm-line)!important;background:var(--vm-soft)!important}
+
+/* Top titres et listes API */
+.vm-api-row,.track-row{
+  background:var(--vm-soft)!important;
+  border-color:var(--vm-line)!important;
+}
+.vm-api-title,.track-info b{color:var(--vm-title)!important}
+.vm-api-artist,.track-info span{color:var(--vm-subtitle)!important}
+.vm-api-empty,.track-time{color:var(--vm-muted)!important}
+.vm-api-cover,.vm-top-cover{border-color:var(--vm-line)!important;background:var(--vm-soft)!important}
+
+/* Pages Dédicaces / actualités */
+.dedication-layout,.news-grid,.info-grid,.tiktok-highlights,.tiktok-videos{background:transparent!important}
+.ded-card,.news-card,.request-card,.request-box,.dedication-card{
+  background:var(--vm-card)!important;
+  background-image:none!important;
+  border:1px solid var(--vm-line)!important;
+  border-radius:26px!important;
+  box-shadow:var(--vm-shadow)!important;
+  color:var(--vm-text)!important;
+}
+.ded-card h2,.news-card h3,.request-card h2,.request-box h2{color:var(--vm-title)!important}
+.ded-card p,.news-card p,.request-card p,.request-box p{color:var(--vm-muted)!important}
+
+/* TikTok — neutralise les anciennes cartes sombres */
+.tiktok-hero,.tiktok-content,.tiktok-highlight,.tiktok-video,.tiktok-card,.video-card,.social-card{
+  background:var(--vm-card)!important;
+  background-image:none!important;
+  border:1px solid var(--vm-line)!important;
+  border-radius:26px!important;
+  box-shadow:var(--vm-shadow)!important;
+  color:var(--vm-text)!important;
+}
+.tiktok-hero h1,.tiktok-hero h2,.tiktok-content h2,.tiktok-highlight h3,.tiktok-video h3,.tiktok-card h3,.video-card h3{color:var(--vm-title)!important}
+.tiktok-hero p,.tiktok-content p,.tiktok-highlight p,.tiktok-video p,.tiktok-card p,.video-card p{color:var(--vm-muted)!important}
+
+/* Conditions */
+.legal-title h1,.legal-section h2,.legal-item h3{color:var(--vm-title)!important}
+.legal-title p,.legal-section .updated{color:var(--vm-subtitle)!important}
+.legal-section,.legal-tabs a{
+  background:var(--vm-card)!important;
+  background-image:none!important;
+  border-color:var(--vm-line)!important;
+  color:var(--vm-title)!important;
+  box-shadow:var(--vm-shadow)!important;
+}
+.legal-item{border-color:var(--vm-line)!important}
+.legal-item p{color:var(--vm-muted)!important}
+
+/* Téléchargement / installation */
+.platform,.dialog,.steps,.status{
+  background:var(--vm-card)!important;
+  background-image:none!important;
+  border-color:var(--vm-line)!important;
+  color:var(--vm-text)!important;
+}
+.platform h2,.dialog h2{color:var(--vm-title)!important}
+.platform p,.dialog-sub{color:var(--vm-muted)!important}
+.choose,.steps,.status{background:var(--vm-soft)!important}
+.choose{color:var(--vm-purple)!important}
+
+/* Notifications */
+.gate{
+  background:var(--vm-card)!important;
+  background-image:none!important;
+  border-color:var(--vm-line)!important;
+  color:var(--vm-text)!important;
+  box-shadow:var(--vm-shadow)!important;
+}
+.gate h1{color:var(--vm-title)!important}
+.gate h1 span,.gate p span{color:var(--vm-subtitle)!important;text-shadow:none!important}
+.gate p{color:var(--vm-muted)!important}
+.gate .logo{background:var(--vm-soft)!important;border-color:var(--vm-line)!important;box-shadow:none!important}
+#later{background:var(--vm-soft)!important;color:var(--vm-title)!important;border-color:var(--vm-line)!important}
+
+/* Footer site ancien */
+.footer-site{
+  background:transparent!important;
+  background-image:none!important;
+  border-color:var(--vm-line)!important;
+  box-shadow:none!important;
+}
+.footer-center,.footer-sync{color:var(--vm-muted)!important}
+.footer-center strong,.footer-links a{color:var(--vm-title)!important}
+.footer-links,.footer-sync{border-color:var(--vm-line)!important}
+.footer-tiktok a{background:var(--vm-soft)!important;color:var(--vm-title)!important;border-color:var(--vm-line)!important}
+
+/* Barre de navigation toujours violette, y compris anciens styles très spécifiques */
+html body nav.nav,html body .nav,html body .bottom-nav,
+html body nav.nav[style],html body .bottom-nav[style]{
+  background:linear-gradient(135deg,#3b1468,#6828d8)!important;
+  background-image:linear-gradient(135deg,#3b1468,#6828d8)!important;
+  border-color:rgba(255,255,255,.14)!important;
+}
+html body nav.nav a,html body .nav a,html body .bottom-nav a,
+html body .nav .nav-player-btn{color:#d9caee!important;background:transparent!important}
+html body nav.nav a.active,html body .nav a.active,html body .bottom-nav a.active,
+html body .nav .nav-player-btn.is-open{color:#fff!important}
+
+/* Bannière commune */
+#vmSharedDedicationBar,.dedication-banner,.ticker{
+  background:var(--vm-card)!important;
+  background-image:none!important;
+  border-color:var(--vm-line)!important;
+}
+#vmSharedDedicationBar .vmDedLabel,.dedication-label,.ticker-label{background:var(--vm-soft)!important;color:var(--vm-title)!important;border-color:var(--vm-line)!important}
+#vmSharedDedicationBar .vmDedText,.dedication-message span,.ticker-track{color:var(--vm-text)!important}
+
+@media(max-width:700px){
+  .contact-card,#vm-radioking-live-info,.ded-card,.news-card,.request-card,.request-box,
+  .tiktok-hero,.tiktok-content,.tiktok-highlight,.tiktok-video,.tiktok-card,.video-card,
+  .legal-section,.platform,.dialog,.gate{border-radius:24px!important}
+}
