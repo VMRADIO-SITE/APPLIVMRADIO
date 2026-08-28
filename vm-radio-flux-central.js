@@ -13,7 +13,6 @@
   function all(sel,fn){document.querySelectorAll(sel).forEach(fn);}
 
   function forceManagerTheme(){
-    /* Cartes principales accueil : écrase directement le noir de index.html */
     all('.home-original-module > article.card',function(card){
       imp(card,'background','#f2edff');
       imp(card,'background-image','none');
@@ -33,7 +32,6 @@
       imp(el,'color','#756b83');
     });
 
-    /* Sous-zones des cartes */
     all('#programme-direct .now,#programme-next .next,#top-titres [data-favorites],.home-original-module [data-previous],.home-original-module .vm-home-list-card,.home-original-module .vm-programme-previous-item',function(el){
       imp(el,'background','#f7f4ff');
       imp(el,'background-image','none');
@@ -42,7 +40,6 @@
       imp(el,'box-shadow','none');
     });
 
-    /* Autres cartes des pages internes */
     all('.info-card,.ded-card,.news-card,.contact-card,.tiktok-highlight,.tiktok-video,.tiktok-content,.module,.mini,.promo,.tile,.music-program,.dedication-form',function(card){
       imp(card,'background','#f2edff');
       imp(card,'background-image','none');
@@ -53,7 +50,6 @@
     all('.info-card h1,.info-card h2,.ded-card h1,.ded-card h2,.news-card h3,.contact-card h2,.tiktok-highlight h3,.tiktok-content h2,.module h2,.mini b,.promo h2,.tile b',function(el){imp(el,'color','#3b1468');});
     all('.module-subtitle,.contact-subtitle,.info-title p,.dedications-title p,.tiktok-page-title p',function(el){imp(el,'color','#c477f3');});
 
-    /* Popups */
     all('#vm-update-popup .vm-update-box,.popup,.popup-box,.modal,.modal-content,.notification-box,.notification-card,.dialog,.gate',function(el){
       imp(el,'background','#f2edff');
       imp(el,'background-image','none');
@@ -61,7 +57,6 @@
       imp(el,'color','#211832');
     });
 
-    /* Le vrai player principal reste sombre */
     all('.player-shell',function(el){
       imp(el,'background','linear-gradient(115deg,#211832,#281b3b)');
       imp(el,'color','#fff');
@@ -71,7 +66,6 @@
     all('.player-shell .artist',function(el){imp(el,'color','#d8cfea');});
     all('.player-shell .time,.player-shell p,.player-shell small',function(el){imp(el,'color','#bdb2ca');});
 
-    /* Navigation violette */
     all('nav.nav,.bottom-nav',function(el){
       imp(el,'background','linear-gradient(135deg,#3b1468,#6828d8)');
       imp(el,'background-image','linear-gradient(135deg,#3b1468,#6828d8)');
@@ -103,7 +97,12 @@
   window.addEventListener('pageshow',function(){setTimeout(forceManagerTheme,0);});
 
   var core=document.createElement('script');
-  core.src='vm-radio-flux-central-core.js?v=20260828-manager-global-6';
+  core.src='vm-radio-flux-central-core.js?v=20260828-manager-global-7';
   core.async=false;
   document.head.appendChild(core);
+
+  var presence=document.createElement('script');
+  presence.src='listener-presence-client.js?v=20260828-1';
+  presence.async=false;
+  document.head.appendChild(presence);
 })();
