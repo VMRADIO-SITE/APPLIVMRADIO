@@ -1,0 +1,266 @@
+/* VM RADIO — couche finale Manager Admin pour TOUTES les pages */
+:root{
+  --vm-bg:#f2f1fa;
+  --vm-card:#f2edff;
+  --vm-soft:#f7f4ff;
+  --vm-line:#e2daf3;
+  --vm-title:#3b1468;
+  --vm-subtitle:#c477f3;
+  --vm-purple:#6828d8;
+  --vm-purple2:#7c3aed;
+  --vm-text:#211832;
+  --vm-muted:#756b83;
+  --vm-shadow:0 8px 26px rgba(33,24,50,.08);
+}
+
+html,body{
+  background:var(--vm-bg)!important;
+  background-image:none!important;
+  color:var(--vm-text)!important;
+}
+.app,.app-shell,.page,.page-content,.content,.home-content,.vm-page-content,
+.legal-page,.tiktok-page,.dedications-page,.info-page{
+  background:transparent!important;
+  background-image:none!important;
+  color:var(--vm-text)!important;
+}
+
+/* Titres et sous-titres communs */
+h1,h2,h3,h4,h5,
+.page-title h1,.program-title,.legal-title h1,.dedications-title h1,.info-title h1,
+.tiktok-page-title h1,.tiktok-content-title h2,.title,.card-title,.module-title{
+  color:var(--vm-title)!important;
+}
+h1 span,.page-title p,.legal-title p,.dedications-title p,.info-title p,
+.tiktok-page-title p,.intro,.subtitle,.module-subtitle,.section-subtitle,.eyebrow,
+.artist,.previous-artist,.dialog-sub{
+  color:var(--vm-subtitle)!important;
+}
+p,small,.small,.muted,.time,.previous-time,.updated,.track-time,.status{
+  color:var(--vm-muted)!important;
+}
+
+/* Toutes les cartes classiques */
+.card,.module,.promo,.mini,.info-card,.ded-card,.news-card,.tile,.panel,
+.section-card,.content-card,.module-card,.music-program,.dedication-form,
+.tiktok-hero,.tiktok-content,.tiktok-highlight,.tiktok-video,
+.vm-home-list-card,.vm-programme-previous-item,.hint,.syncbar,.info-action,
+.platform,.steps,.status,.legal-section,.legal-tabs a,.footer-site,
+.notification-card,.notification-box,.gate{
+  background:var(--vm-card)!important;
+  background-image:none!important;
+  border:1px solid var(--vm-line)!important;
+  color:var(--vm-text)!important;
+  box-shadow:var(--vm-shadow)!important;
+}
+
+.card,.module,.promo,.info-card,.ded-card,.news-card,.tile,.panel,.section-card,
+.content-card,.module-card,.music-program,.dedication-form,.tiktok-hero,.tiktok-content,
+.tiktok-highlight,.tiktok-video,.legal-section,.platform,.gate{
+  border-radius:26px!important;
+}
+
+/* Sous-cartes et listes */
+.now,.next,.next-card,.track-row,.vm-api-row,.info-action,.mini,.hint,.syncbar,
+.steps,.status,.legal-item,.choose{
+  background:var(--vm-soft)!important;
+  background-image:none!important;
+  border-color:var(--vm-line)!important;
+  color:var(--vm-text)!important;
+  box-shadow:none!important;
+}
+.now,.next,.next-card,.mini,.hint,.syncbar,.steps,.status,.info-action,.choose{
+  border:1px solid var(--vm-line)!important;
+  border-radius:18px!important;
+}
+
+/* Page Conditions / Confidentialité */
+.legal-tabs a{
+  color:var(--vm-title)!important;
+  text-decoration:none!important;
+  border-radius:14px!important;
+}
+.legal-section h2,.legal-item h3{color:var(--vm-title)!important}
+.legal-section .updated{color:var(--vm-subtitle)!important}
+.legal-item{border-bottom:1px solid var(--vm-line)!important}
+.legal-item p{color:var(--vm-muted)!important}
+
+/* Page Téléchargement */
+.hero{background:transparent!important;color:var(--vm-text)!important}
+.platform h2{color:var(--vm-title)!important}
+.platform p{color:var(--vm-muted)!important}
+.platform-icon{color:var(--vm-purple)!important}
+.platform:hover,.platform:focus-visible{
+  border-color:#bfa8ef!important;
+  box-shadow:0 10px 28px rgba(33,24,50,.10)!important;
+}
+.choose{
+  display:inline-block!important;
+  color:var(--vm-purple)!important;
+  font-weight:800!important;
+}
+.bottom .home,.home,.btn-primary,.button-primary,button.primary,#accept,.install{
+  background:linear-gradient(135deg,var(--vm-purple),var(--vm-purple2))!important;
+  color:#fff!important;
+  border:0!important;
+  box-shadow:0 8px 22px rgba(104,40,216,.18)!important;
+}
+.overlay{
+  background:rgba(33,24,50,.32)!important;
+  backdrop-filter:blur(8px)!important;
+  -webkit-backdrop-filter:blur(8px)!important;
+}
+.dialog{
+  background:var(--vm-card)!important;
+  background-image:none!important;
+  border:1px solid var(--vm-line)!important;
+  border-radius:26px!important;
+  color:var(--vm-text)!important;
+  box-shadow:0 22px 60px rgba(33,24,50,.18)!important;
+}
+.dialog h2{color:var(--vm-title)!important}
+.dialog-sub{color:var(--vm-subtitle)!important}
+.steps li{color:var(--vm-text)!important}
+.close,#later{
+  background:var(--vm-soft)!important;
+  color:var(--vm-title)!important;
+  border:1px solid var(--vm-line)!important;
+  box-shadow:none!important;
+}
+
+/* Page Notifications */
+.gate{border-radius:34px!important}
+.gate h1{color:var(--vm-title)!important}
+.gate h1 span,.gate p span{color:var(--vm-subtitle)!important;text-shadow:none!important}
+.gate p{color:var(--vm-muted)!important}
+.gate .line{
+  background:linear-gradient(90deg,var(--vm-purple),var(--vm-subtitle),transparent)!important;
+  box-shadow:none!important;
+}
+.gate .logo{
+  background:var(--vm-soft)!important;
+  border:1px solid var(--vm-line)!important;
+  box-shadow:none!important;
+}
+#later{
+  background:var(--vm-soft)!important;
+  color:var(--vm-title)!important;
+  border:1px solid var(--vm-line)!important;
+}
+#accept{color:#fff!important}
+
+/* Test notifications */
+body > main.card{background:var(--vm-card)!important}
+#status{color:var(--vm-muted)!important}
+textarea{background:var(--vm-soft)!important;color:var(--vm-text)!important;border-color:var(--vm-line)!important}
+
+/* Infos */
+.info-card h2,.info-action b,.info-stat span:last-child{color:var(--vm-title)!important}
+.info-card p{color:var(--vm-muted)!important}
+.info-stat{border-bottom:1px solid var(--vm-line)!important;color:var(--vm-text)!important}
+.info-action{color:var(--vm-text)!important}
+
+/* TikTok */
+.tiktok-highlight h3,.tiktok-content-title h2,.tiktok-video h3{color:var(--vm-title)!important}
+.tiktok-highlight p,.tiktok-content-title p,.tiktok-video p{color:var(--vm-muted)!important}
+
+/* Dédicaces */
+.ded-card h2,.dedication-form h2{color:var(--vm-title)!important}
+.ded-card p,.dedication-form p{color:var(--vm-muted)!important}
+.dedication-status{color:var(--vm-subtitle)!important}
+
+/* Bandeau dédicaces clair */
+.ticker,.dedication-banner,#vmSharedDedicationBar,.vm-common-dedication-banner{
+  background:var(--vm-card)!important;
+  background-image:none!important;
+  border-color:var(--vm-line)!important;
+  color:var(--vm-text)!important;
+  box-shadow:var(--vm-shadow)!important;
+}
+.ticker-label,.dedication-label,#vmSharedDedicationBar .vmDedLabel,.vm-common-dedication-title{
+  background:var(--vm-soft)!important;
+  color:var(--vm-title)!important;
+  border-color:var(--vm-line)!important;
+}
+.ticker-track,.dedication-message span,#vmSharedDedicationBar .vmDedText,
+.vm-common-dedication-message{color:var(--vm-text)!important}
+.dedication-banner:before,.dedication-banner:after{background:none!important}
+
+/* Formulaires */
+input,textarea,select{
+  background:var(--vm-soft)!important;
+  color:var(--vm-text)!important;
+  border:1px solid var(--vm-line)!important;
+  box-shadow:none!important;
+}
+input::placeholder,textarea::placeholder{color:#a99caf!important}
+input:focus,textarea:focus,select:focus{
+  border-color:#bfa8ef!important;
+  box-shadow:0 0 0 4px rgba(104,40,216,.08)!important;
+}
+
+/* Footer clair */
+footer,.app-footer,.footer-site{
+  background:transparent!important;
+  background-image:none!important;
+  border-color:var(--vm-line)!important;
+  color:var(--vm-muted)!important;
+  box-shadow:none!important;
+}
+.footer-center,.footer-sync,.app-footer-powered,.app-footer-copy{color:var(--vm-muted)!important}
+.footer-center strong,.app-footer-brand,.app-footer-powered strong,.footer-links a,.app-footer-links a{
+  color:var(--vm-title)!important;
+}
+.footer-links,.footer-sync{border-color:var(--vm-line)!important}
+.footer-tiktok a{
+  background:var(--vm-soft)!important;
+  color:var(--vm-title)!important;
+  border-color:var(--vm-line)!important;
+}
+
+/* Navigation : toujours violette */
+html body nav.nav,html body .nav,html body .bottom-nav{
+  background:linear-gradient(135deg,#3b1468,#6828d8)!important;
+  background-image:linear-gradient(135deg,#3b1468,#6828d8)!important;
+  border-color:rgba(255,255,255,.14)!important;
+  box-shadow:0 -8px 28px rgba(59,20,104,.22)!important;
+}
+html body nav.nav a,html body .nav a,html body .bottom-nav a,
+html body nav.nav .nav-player-btn,html body .nav .nav-player-btn{
+  color:#d9caee!important;
+  background:transparent!important;
+}
+html body nav.nav a.active,html body .nav a.active,html body .bottom-nav a.active,
+html body nav.nav .nav-player-btn.is-open,html body .nav .nav-player-btn.is-open{
+  color:#fff!important;
+}
+html body nav.nav a.active i,html body .bottom-nav a.active i{
+  background:rgba(255,255,255,.15)!important;
+  color:#fff!important;
+}
+
+/* Bouton player flottant */
+#vmradio-fixed-player-nav-btn{
+  background:linear-gradient(135deg,#3b1468,#6828d8)!important;
+  color:#fff!important;
+  box-shadow:0 8px 24px rgba(59,20,104,.24)!important;
+}
+
+/* Le vrai player radio conserve volontairement son fond sombre */
+.player-shell{
+  background:linear-gradient(115deg,#211832,#281b3b)!important;
+  color:#fff!important;
+  border-color:transparent!important;
+}
+.player-shell h1,.player-shell h2,.player-shell h3,.player-shell .title,.player-shell strong,.player-shell b{color:#fff!important}
+.player-shell .eyebrow,.player-shell .subtitle{color:#c9b8ff!important}
+.player-shell .artist{color:#d8cfea!important}
+.player-shell p,.player-shell small,.player-shell .time{color:#bdb2ca!important}
+
+@media(max-width:700px){
+  .card,.module,.promo,.info-card,.ded-card,.news-card,.tile,.panel,.section-card,
+  .content-card,.module-card,.music-program,.dedication-form,.tiktok-hero,.tiktok-content,
+  .tiktok-highlight,.tiktok-video,.legal-section,.platform,.gate,.dialog{
+    border-radius:24px!important;
+  }
+}
