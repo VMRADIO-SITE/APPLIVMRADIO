@@ -5,6 +5,25 @@
   const INSTALL_ID_KEY = 'vmradioPwaInstallIdV2';
   const ADMIN_INSTALL_ENDPOINT = 'https://admin.vmradio.fr/api/pwa/install';
 
+  // TEST DESIGN — charge le thème visuel inspiré du tableau de bord Admin.
+  // Cette injection est indépendante du player, des dédicaces et du routage SPA.
+  function loadAdminThemeTest() {
+    if (document.getElementById('vm-admin-theme-test')) return;
+    const link = document.createElement('link');
+    link.id = 'vm-admin-theme-test';
+    link.rel = 'stylesheet';
+    link.href = './admin-theme-test.css?v=20260828-1';
+    document.head.appendChild(link);
+  }
+
+  loadAdminThemeTest();
+
+  const reapplyAdminThemeTest = () => {
+    const link = document.getElementById('vm-admin-theme-test');
+    if (link && link.parentNode === document.head) document.head.appendChild(link);
+  };
+  window.addEventListener('vmradio:pagechange', reapplyAdminThemeTest);
+
   function isVmRadioApp() {
     return location.hostname === 'app.vmradio.fr' || location.hostname === 'www.app.vmradio.fr';
   }
