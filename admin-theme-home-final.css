@@ -1,0 +1,129 @@
+/* VM RADIO — correction finale Accueil / priorité maximale */
+:root{--vm-admin-card:#f2edff;--vm-admin-card-soft:#f7f4ff;--vm-admin-line:#e2daf3;--vm-admin-title:#3b1468;--vm-admin-sub:#c477f3;--vm-admin-text:#211832;--vm-admin-muted:#756b83;--vm-admin-purple:#6828d8;--vm-admin-shadow:0 8px 26px rgba(33,24,50,.08)}
+
+/* Les anciens styles de index.html utilisent #accueil .card + !important.
+   Ces sélecteurs sont volontairement plus spécifiques. */
+html body #accueil .card,
+html body #accueil .promo,
+html body #accueil .mini,
+html body #accueil .music-program,
+html body #accueil .module-card,
+html body #accueil .vm-home-list-card,
+html body #accueil .vm-programme-previous-item,
+html body #programme-direct.card,
+html body #programme-next.card,
+html body #top-titres.card,
+html body .home-original-module > .card,
+html body .home-original-module > .promo{
+  position:relative!important;
+  overflow:hidden!important;
+  background:var(--vm-admin-card)!important;
+  background-image:none!important;
+  border:1px solid var(--vm-admin-line)!important;
+  border-radius:26px!important;
+  box-shadow:var(--vm-admin-shadow)!important;
+  color:var(--vm-admin-text)!important;
+}
+
+/* Sous-zones internes des cartes */
+html body #accueil .card .now,
+html body #accueil .card .next,
+html body #accueil .card .track-row,
+html body #accueil .card .vm-api-row,
+html body #accueil .card .vm-home-list-card,
+html body #accueil .card .vm-programme-previous-item,
+html body #top-titres .track-row,
+html body #top-titres .vm-home-list-card{
+  background:var(--vm-admin-card-soft)!important;
+  background-image:none!important;
+  border:1px solid var(--vm-admin-line)!important;
+  border-radius:18px!important;
+  box-shadow:none!important;
+  color:var(--vm-admin-text)!important;
+}
+
+/* Titres */
+html body #accueil .card h1,
+html body #accueil .card h2,
+html body #accueil .card h3,
+html body #accueil .card .title,
+html body #accueil .card .previous-title,
+html body #accueil .card strong,
+html body #accueil .card b,
+html body #programme-direct h2,
+html body #programme-next h2,
+html body #top-titres h2{
+  color:var(--vm-admin-title)!important;
+}
+
+/* Artistes / accents */
+html body #accueil .card .artist,
+html body #accueil .card .previous-artist,
+html body #accueil .card .track-info span,
+html body #accueil .card .vm-api-artist,
+html body #accueil .card .eyebrow{
+  color:var(--vm-admin-sub)!important;
+}
+
+/* Textes secondaires */
+html body #accueil .card p,
+html body #accueil .card small,
+html body #accueil .card .time,
+html body #accueil .card .previous-time,
+html body #accueil .card .track-time,
+html body #accueil .module-subtitle,
+html body #accueil .homepage-program-subtitle{
+  color:var(--vm-admin-muted)!important;
+}
+
+/* Pochettes */
+html body #accueil .cover,
+html body #accueil .track-row img,
+html body #accueil .vm-home-list-card img,
+html body #accueil .vm-programme-previous-item img{
+  border-color:#cbbde1!important;
+  box-shadow:none!important;
+}
+
+/* Décor rond façon Manager */
+html body #accueil .card::after,
+html body .home-original-module > .card::after{
+  content:""!important;
+  position:absolute!important;
+  z-index:0!important;
+  width:118px!important;
+  height:118px!important;
+  right:-48px!important;
+  top:-42px!important;
+  border-radius:50%!important;
+  background:rgba(255,255,255,.52)!important;
+  pointer-events:none!important;
+}
+html body #accueil .card > *,
+html body .home-original-module > .card > *{position:relative!important;z-index:1!important}
+
+/* Le vrai player reste sombre */
+html body #accueil .player-shell{
+  background:linear-gradient(115deg,#211832,#281b3b)!important;
+  color:#fff!important;
+  border:0!important;
+}
+html body #accueil .player-shell h1,
+html body #accueil .player-shell h2,
+html body #accueil .player-shell h3,
+html body #accueil .player-shell .title,
+html body #accueil .player-shell strong{color:#fff!important}
+html body #accueil .player-shell .artist{color:#d8cfea!important}
+html body #accueil .player-shell .time,
+html body #accueil .player-shell p,
+html body #accueil .player-shell small{color:#bdb2ca!important}
+
+@media(max-width:700px){
+  html body #accueil .card,
+  html body #accueil .promo,
+  html body #accueil .mini,
+  html body #programme-direct.card,
+  html body #programme-next.card,
+  html body #top-titres.card{border-radius:24px!important}
+  html body #accueil .card::after{width:105px!important;height:105px!important;right:-43px!important;top:-38px!important}
+}
