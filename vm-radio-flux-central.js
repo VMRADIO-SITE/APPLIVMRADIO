@@ -97,7 +97,7 @@
   window.addEventListener('pageshow',function(){setTimeout(forceManagerTheme,0);});
 
   var core=document.createElement('script');
-  core.src='vm-radio-flux-central-core.js?v=20260828-manager-global-7';
+  core.src='vm-radio-flux-central-core.js?v=20260831-hls-native1';
   core.async=false;
   document.head.appendChild(core);
 
