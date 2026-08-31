@@ -30,8 +30,8 @@ messaging.onBackgroundMessage(payload => {
   self.registration.showNotification(title, { body, icon, badge: icon, tag, data: { url: link } });
 });
 
-// v32 : envoi des dédicaces fiabilisé sans pré-vérification réseau.
-const CACHE_NAME = "vm-radio-app-v44";
+// v45 : HLS natif - ne jamais intercepter/cache la playlist live et ses segments.
+const CACHE_NAME = "vm-radio-app-v45-hls-native";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -46,7 +46,7 @@ const APP_SHELL = [
   "./notifications.js",
   "./dedications-feed.js?v=5",
   "./fcm-token-sync.js",
-  "./audio-recovery.js",
+  "./audio-recovery.js?v=4",
   "./pwa-install-tracker.js?v=2"
 ];
 
@@ -95,7 +95,13 @@ self.addEventListener("fetch", event => {
     event.respondWith(fetch(event.request, { cache: "no-store" }));
     return;
   }
-  if (/radio|stream|audio/i.test(url.pathname)) return;
+
+  // Audio live : laisser le navigateur/Safari dialoguer directement avec le serveur.
+  if (
+    /radio|stream|audio/i.test(url.pathname) ||
+    url.pathname.startsWith("/hls-live/") ||
+    /\.(?:m3u8|ts)$/i.test(url.pathname)
+  ) return;
 
   event.respondWith(
     fetch(event.request, { cache: "no-store" }).then(async response => {
@@ -115,7 +121,7 @@ self.addEventListener("fetch", event => {
           if (!injected.includes("./dedications-feed.js")) injected = injected.replace(/<\/body>/i, '<script src="./dedications-feed.js?v=5"></script></body>');
           if (!injected.includes("./notifications.js")) injected = injected.replace(/<\/body>/i, '<script type="module" src="./notifications.js?v=vm27"></script></body>');
           if (!injected.includes("./fcm-token-sync.js")) injected = injected.replace(/<\/body>/i, '<script type="module" src="./fcm-token-sync.js?v=1"></script></body>');
-          if (!injected.includes("./audio-recovery.js")) injected = injected.replace(/<\/body>/i, '<script src="./audio-recovery.js?v=3"></script></body>');
+          if (!injected.includes("./audio-recovery.js")) injected = injected.replace(/<\/body>/i, '<script src="./audio-recovery.js?v=4"></script></body>');
           if (!injected.includes("./pwa-install-tracker.js")) injected = injected.replace(/<\/body>/i, '<script src="./pwa-install-tracker.js?v=2"></script></body>');
 
           const headers = new Headers(response.headers);
