@@ -112,7 +112,7 @@
   if(window.__VMRADIO_APP_MAINTENANCE_GUARD__)return;
   window.__VMRADIO_APP_MAINTENANCE_GUARD__=true;
   var ENDPOINT='https://admin.vmradio.fr/api/public/maintenance';
-  var overlay=null,timer=null;
+  var overlay=null,timer=null,busy=false;
 
   function ensureOverlay(){
     if(overlay||!document.body)return overlay;
@@ -127,6 +127,8 @@
   function stopAudio(){document.querySelectorAll('audio,video').forEach(function(el){try{el.pause()}catch(_){}});}
 
   async function check(){
+    if(busy)return;
+    busy=true;
     try{
       var r=await fetch(ENDPOINT+'?_='+Date.now(),{cache:'no-store',credentials:'omit'});
       var d=await r.json().catch(function(){return null});
@@ -135,15 +137,19 @@
         ensureOverlay();
         stopAudio();
         document.documentElement.style.overflow='hidden';
-        if(!timer)timer=setInterval(function(){stopAudio();check();},15000);
       }else{
         if(overlay){overlay.remove();overlay=null;}
         document.documentElement.style.overflow='';
-        if(timer){clearInterval(timer);timer=null;}
       }
-    }catch(_){}
+    }catch(_){}finally{busy=false;}
   }
 
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',check,{once:true});else check();
+  function startMaintenanceWatch(){
+    check();
+    if(!timer)timer=setInterval(check,3000);
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startMaintenanceWatch,{once:true});else startMaintenanceWatch();
   window.addEventListener('focus',check);
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)check();});
 })();
