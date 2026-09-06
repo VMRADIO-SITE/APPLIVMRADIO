@@ -106,3 +106,44 @@
   presence.async=false;
   document.head.appendChild(presence);
 })();
+
+(function(){
+  'use strict';
+  if(window.__VMRADIO_APP_MAINTENANCE_GUARD__)return;
+  window.__VMRADIO_APP_MAINTENANCE_GUARD__=true;
+  var ENDPOINT='https://admin.vmradio.fr/api/public/maintenance';
+  var overlay=null,timer=null;
+
+  function ensureOverlay(){
+    if(overlay||!document.body)return overlay;
+    overlay=document.createElement('div');
+    overlay.id='vmradioMaintenanceOverlay';
+    overlay.style.cssText='position:fixed;inset:0;z-index:2147483647;background:radial-gradient(circle at top,#291247 0,#12091d 42%,#08060d 100%);color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Arial,sans-serif;text-align:center';
+    overlay.innerHTML='<div style="width:min(560px,100%);padding:36px 28px;border:1px solid rgba(198,119,243,.32);border-radius:26px;background:rgba(21,12,31,.9);box-shadow:0 28px 90px rgba(0,0,0,.45)"><div style="font-size:42px">🛠️</div><h1 style="margin:14px 0 8px;font-size:30px">Maintenance en cours</h1><p style="margin:0;color:#d6c9e4;line-height:1.6">L’application VM RADIO est temporairement indisponible pendant une intervention technique.</p><div style="margin-top:18px;color:#c477f3;font-weight:800;font-size:13px">Nous revenons très vite.</div></div>';
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  function stopAudio(){document.querySelectorAll('audio,video').forEach(function(el){try{el.pause()}catch(_){}});}
+
+  async function check(){
+    try{
+      var r=await fetch(ENDPOINT+'?_='+Date.now(),{cache:'no-store',credentials:'omit'});
+      var d=await r.json().catch(function(){return null});
+      if(!r.ok||!d||d.ok===false)return;
+      if(d.app===true){
+        ensureOverlay();
+        stopAudio();
+        document.documentElement.style.overflow='hidden';
+        if(!timer)timer=setInterval(function(){stopAudio();check();},15000);
+      }else{
+        if(overlay){overlay.remove();overlay=null;}
+        document.documentElement.style.overflow='';
+        if(timer){clearInterval(timer);timer=null;}
+      }
+    }catch(_){}
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',check,{once:true});else check();
+  window.addEventListener('focus',check);
+})();
