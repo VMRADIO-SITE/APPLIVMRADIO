@@ -1,0 +1,70 @@
+name: Inject maintenance gate v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'maintenance-gate-v2.js'
+      - '.github/workflows/inject-maintenance-gate-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  inject:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Inject blocking maintenance script
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('index.html')
+          s = p.read_text()
+
+          tag = '<script src="maintenance-gate-v2.js?v=20260906-maintenance-block-v2"></script>'
+          if tag not in s:
+              markers = [
+                  '<script src="vm-radio-flux-central.js?v=20260827-requester6"></script>',
+                  '<script src="vm-radio-flux-central.js?v=20260906-maintenance-v2"></script>',
+                  '<script src="vm-radio-flux-central.js',
+              ]
+              inserted = False
+              for marker in markers:
+                  i = s.find(marker)
+                  if i != -1:
+                      if marker.endswith('js'):
+                          end = s.find('></script>', i)
+                          if end != -1:
+                              s = s[:i] + tag + s[i:]
+                              inserted = True
+                              break
+                      else:
+                          s = s[:i] + tag + s[i:]
+                          inserted = True
+                          break
+              if not inserted:
+                  s = s.replace('</head>', tag + '</head>', 1)
+
+          s = s.replace(
+              'vm-radio-flux-central.js?v=20260827-requester6',
+              'vm-radio-flux-central.js?v=20260906-maintenance-v2'
+          )
+
+          p.write_text(s)
+          PY
+
+      - name: Commit change
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Load blocking maintenance gate in app"
+          git push
