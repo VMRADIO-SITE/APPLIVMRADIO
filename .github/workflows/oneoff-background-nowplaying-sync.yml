@@ -1,0 +1,76 @@
+name: One-off background nowplaying sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/oneoff-background-nowplaying-sync.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch background metadata refresh
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          core = Path('vm-radio-flux-central-core.js')
+          s = core.read_text(encoding='utf-8')
+
+          old = """async function getEngineRaw(){const r=await nativeFetch(ENGINE+'?_='+Date.now(),{cache:'no-store',credentials:'omit'});if(!r.ok)throw new Error('VM RADIO API '+r.status);const ct=String(r.headers.get('content-type')||'');if(!ct.includes('application/json'))throw new Error('VM RADIO API réponse invalide');return r.json()}"""
+          new = """async function getEngineRaw(signal){const r=await nativeFetch(ENGINE+'?_='+Date.now(),{cache:'no-store',credentials:'omit',signal});if(!r.ok)throw new Error('VM RADIO API '+r.status);const ct=String(r.headers.get('content-type')||'');if(!ct.includes('application/json'))throw new Error('VM RADIO API réponse invalide');return r.json()}"""
+          if s.count(old) != 1:
+              raise SystemExit(f'getEngineRaw attendu 1, trouvé {s.count(old)}')
+          s = s.replace(old, new, 1)
+
+          old = """let refreshing=false;async function refresh(){if(refreshing)return;refreshing=true;try{const d=await getEngineRaw();render(track(d?.now_playing?.song,d?.now_playing),track(d?.playing_next?.song,d?.playing_next),(Array.isArray(d?.song_history)?d.song_history:[]).map(x=>track(x?.song,x)).filter(Boolean))}catch(e){console.warn('VM RADIO moteur indisponible',e)}finally{refreshing=false}}"""
+          new = """let refreshing=false;let refreshController=null;let refreshRun=0;let lastBackgroundRefresh=0;async function refresh(options={}){const force=options===true||options?.force===true;if(force&&refreshController){try{refreshController.abort()}catch(_){}}if(refreshing&&!force)return;const run=++refreshRun,controller=new AbortController();refreshController=controller;refreshing=true;const timeout=setTimeout(()=>{try{controller.abort()}catch(_){}},7000);try{const d=await getEngineRaw(controller.signal);if(run!==refreshRun)return;render(track(d?.now_playing?.song,d?.now_playing),track(d?.playing_next?.song,d?.playing_next),(Array.isArray(d?.song_history)?d.song_history:[]).map(x=>track(x?.song,x)).filter(Boolean))}catch(e){if(e?.name!=='AbortError')console.warn('VM RADIO moteur indisponible',e)}finally{clearTimeout(timeout);if(run===refreshRun){refreshing=false;if(refreshController===controller)refreshController=null}}}function forceRefresh(){return refresh({force:true})}function backgroundRefresh(){if(!document.hidden||liveAudio.paused||liveAudio.ended)return;const now=Date.now();if(now-lastBackgroundRefresh<3500)return;lastBackgroundRefresh=now;forceRefresh()}"""
+          if s.count(old) != 1:
+              raise SystemExit(f'refresh attendu 1, trouvé {s.count(old)}')
+          s = s.replace(old, new, 1)
+
+          old = """function init(){protectImages();ensureNextTime();document.querySelectorAll('audio').forEach(a=>{if(a===liveAudio)return;try{a.pause();a.removeAttribute('src');a.load()}catch(_){}});if(!liveAudio.isConnected)(document.body||document.documentElement).appendChild(liveAudio);window.VMRadioPlayer={play:playLive,pause:pauseLive,stream:STREAM,audio:liveAudio,isHls:VM_HLS_NATIVE};liveAudio.addEventListener('play',syncPlayer);liveAudio.addEventListener('playing',syncPlayer);liveAudio.addEventListener('pause',syncPlayer);const volume=document.getElementById('volume');if(volume){liveAudio.volume=Number(volume.value||0.85);volume.addEventListener('input',()=>{liveAudio.volume=Number(volume.value)})}syncPlayer();loadRequestUi();refresh();setInterval(refresh,REFRESH);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});window.addEventListener('focus',refresh)}"""
+          new = """function init(){protectImages();ensureNextTime();document.querySelectorAll('audio').forEach(a=>{if(a===liveAudio)return;try{a.pause();a.removeAttribute('src');a.load()}catch(_){}});if(!liveAudio.isConnected)(document.body||document.documentElement).appendChild(liveAudio);window.VMRadioPlayer={play:playLive,pause:pauseLive,stream:STREAM,audio:liveAudio,isHls:VM_HLS_NATIVE};try{if('audioSession'in navigator)navigator.audioSession.type='playback'}catch(_){}liveAudio.addEventListener('play',()=>{syncPlayer();forceRefresh()});liveAudio.addEventListener('playing',()=>{syncPlayer();forceRefresh()});liveAudio.addEventListener('pause',syncPlayer);liveAudio.addEventListener('timeupdate',backgroundRefresh);liveAudio.addEventListener('progress',backgroundRefresh);liveAudio.addEventListener('loadedmetadata',backgroundRefresh);const volume=document.getElementById('volume');if(volume){liveAudio.volume=Number(volume.value||0.85);volume.addEventListener('input',()=>{liveAudio.volume=Number(volume.value)})}syncPlayer();loadRequestUi();forceRefresh();setInterval(()=>{if(document.hidden)backgroundRefresh();else refresh()},REFRESH);document.addEventListener('visibilitychange',()=>{if(document.hidden){backgroundRefresh();return}forceRefresh()});window.addEventListener('focus',forceRefresh);window.addEventListener('pageshow',forceRefresh);window.addEventListener('online',forceRefresh)}"""
+          if s.count(old) != 1:
+              raise SystemExit(f'init attendu 1, trouvé {s.count(old)}')
+          s = s.replace(old, new, 1)
+
+          s = s.replace('/* VM RADIO — source unique moteur + HLS natif v16 */','/* VM RADIO — source unique moteur + HLS natif v17 + synchro arrière-plan */',1)
+          s = s.replace('if(window.__VMRADIO_CENTRAL_HLS_V16__)return;\nwindow.__VMRADIO_CENTRAL_HLS_V16__=true;','if(window.__VMRADIO_CENTRAL_HLS_V17__)return;\nwindow.__VMRADIO_CENTRAL_HLS_V17__=true;',1)
+          core.write_text(s, encoding='utf-8')
+
+          loader = Path('vm-radio-flux-central.js')
+          t = loader.read_text(encoding='utf-8')
+          old_src = "core.src='vm-radio-flux-central-core.js?v=20260907-jingle-art-v16';"
+          new_src = "core.src='vm-radio-flux-central-core.js?v=20260907-background-nowplaying-v17';"
+          if t.count(old_src) != 1:
+              raise SystemExit(f'loader attendu 1, trouvé {t.count(old_src)}')
+          t = t.replace(old_src, new_src, 1)
+          loader.write_text(t, encoding='utf-8')
+          PY
+
+      - name: Validate JavaScript
+        run: |
+          node --check vm-radio-flux-central-core.js
+          node --check vm-radio-flux-central.js
+          git diff --check
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'Aucun changement à valider.'
+            exit 0
+          fi
+          git config user.name 'VM RADIO'
+          git config user.email 'actions@users.noreply.github.com'
+          git add vm-radio-flux-central-core.js vm-radio-flux-central.js
+          git commit -m 'Keep nowplaying fresh after app backgrounding'
+          git push
