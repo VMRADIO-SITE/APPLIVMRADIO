@@ -6,6 +6,7 @@ on:
     paths:
       - 'maintenance-gate-v2.js'
       - 'vm-radio-flux-central.js'
+      - 'maintenance-audio-sync-v7.js'
       - '.github/workflows/inject-maintenance-gate-v2.yml'
 
 permissions:
@@ -28,8 +29,9 @@ jobs:
           p = Path('index.html')
           s = p.read_text()
 
-          gate_tag = '<script src="maintenance-gate-v2.js?v=20260907-maintenance-vps-direct-v6"></script>'
-          flux_tag = '<script src="vm-radio-flux-central.js?v=20260907-maintenance-vps-direct-v6"></script>'
+          gate_tag = '<script src="maintenance-gate-v2.js?v=20260907-maintenance-vps-direct-v7"></script>'
+          flux_tag = '<script src="vm-radio-flux-central.js?v=20260907-maintenance-vps-direct-v7"></script>'
+          audio_tag = '<script src="maintenance-audio-sync-v7.js?v=20260907-maintenance-audio-v7"></script>'
 
           if re.search(r'<script src="maintenance-gate-v2\.js\?v=[^"]+"></script>', s):
               s = re.sub(
@@ -53,6 +55,20 @@ jobs:
                   count=1
               )
 
+          if re.search(r'<script src="maintenance-audio-sync-v7\.js\?v=[^"]+"></script>', s):
+              s = re.sub(
+                  r'<script src="maintenance-audio-sync-v7\.js\?v=[^"]+"></script>',
+                  audio_tag,
+                  s,
+                  count=1
+              )
+          else:
+              marker = re.search(r'<script src="vm-radio-flux-central\.js\?v=[^"]+"></script>', s)
+              if marker:
+                  s = s[:marker.end()] + audio_tag + s[marker.end():]
+              else:
+                  s = s.replace('</head>', audio_tag + '</head>', 1)
+
           p.write_text(s)
           PY
 
@@ -65,7 +81,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Use VPS direct MP3 maintenance sync"
+          git commit -m "Use reliable VPS direct MP3 maintenance sync v7"
 
           for attempt in 1 2 3 4; do
             if git pull --rebase origin main && git push origin main; then
