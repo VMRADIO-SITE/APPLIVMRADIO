@@ -62,8 +62,21 @@ jobs:
           if git diff --quiet; then
             exit 0
           fi
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           git commit -m "Force fresh maintenance audio scripts"
-          git push
+
+          # D'autres workflows VM RADIO peuvent pousser sur main au même moment.
+          # On se remet à jour puis on réessaie au lieu d'abandonner le cache-bust.
+          for attempt in 1 2 3 4; do
+            if git pull --rebase origin main && git push origin main; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 2))
+          done
+
+          echo "Impossible de publier index.html après plusieurs tentatives."
+          exit 1
