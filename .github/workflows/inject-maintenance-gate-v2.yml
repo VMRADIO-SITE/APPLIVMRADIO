@@ -22,38 +22,37 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
           p = Path('index.html')
           s = p.read_text()
 
-          tag = '<script src="maintenance-gate-v2.js?v=20260906-maintenance-block-v2"></script>'
-          if tag not in s:
-              markers = [
-                  '<script src="vm-radio-flux-central.js?v=20260827-requester6"></script>',
-                  '<script src="vm-radio-flux-central.js?v=20260906-maintenance-v2"></script>',
-                  '<script src="vm-radio-flux-central.js',
-              ]
-              inserted = False
-              for marker in markers:
-                  i = s.find(marker)
-                  if i != -1:
-                      if marker.endswith('js'):
-                          end = s.find('></script>', i)
-                          if end != -1:
-                              s = s[:i] + tag + s[i:]
-                              inserted = True
-                              break
-                      else:
-                          s = s[:i] + tag + s[i:]
-                          inserted = True
-                          break
-              if not inserted:
-                  s = s.replace('</head>', tag + '</head>', 1)
+          gate_tag = '<script src="maintenance-gate-v2.js?v=20260907-maintenance-audio-v4"></script>'
+          flux_tag = '<script src="vm-radio-flux-central.js?v=20260907-maintenance-audio-v4"></script>'
 
-          s = s.replace(
-              'vm-radio-flux-central.js?v=20260827-requester6',
-              'vm-radio-flux-central.js?v=20260906-maintenance-v2'
-          )
+          # Force un nouvel URL de script afin qu'une PWA ouverte ne conserve pas
+          # l'ancienne version qui mettait encore le lecteur audio en pause.
+          if re.search(r'<script src="maintenance-gate-v2\.js\?v=[^"]+"></script>', s):
+              s = re.sub(
+                  r'<script src="maintenance-gate-v2\.js\?v=[^"]+"></script>',
+                  gate_tag,
+                  s,
+                  count=1
+              )
+          else:
+              marker = re.search(r'<script src="vm-radio-flux-central\.js\?v=[^"]+"></script>', s)
+              if marker:
+                  s = s[:marker.start()] + gate_tag + s[marker.start():]
+              else:
+                  s = s.replace('</head>', gate_tag + '</head>', 1)
+
+          if re.search(r'<script src="vm-radio-flux-central\.js\?v=[^"]+"></script>', s):
+              s = re.sub(
+                  r'<script src="vm-radio-flux-central\.js\?v=[^"]+"></script>',
+                  flux_tag,
+                  s,
+                  count=1
+              )
 
           p.write_text(s)
           PY
@@ -66,5 +65,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Load blocking maintenance gate in app"
+          git commit -m "Force fresh maintenance audio scripts"
           git push
