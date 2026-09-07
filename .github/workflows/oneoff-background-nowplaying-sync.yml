@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Patch background metadata refresh
         shell: bash
@@ -73,4 +75,5 @@ jobs:
           git config user.email 'actions@users.noreply.github.com'
           git add vm-radio-flux-central-core.js vm-radio-flux-central.js
           git commit -m 'Keep nowplaying fresh after app backgrounding'
+          git pull --rebase origin main
           git push
