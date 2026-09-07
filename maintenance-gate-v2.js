@@ -1,4 +1,4 @@
-/* VM RADIO — maintenance v5 : popup synchronisé avec l'antenne + audio live conservé */
+/* VM RADIO — maintenance v6 : popup calé sur l'antenne VPS, audio jamais rechargé */
 (function(){
   'use strict';
   if(window.__VMRADIO_MAINTENANCE_GATE_V2__)return;
@@ -6,16 +6,11 @@
 
   var STATE_ENDPOINT='https://admin.vmradio.fr/api/public/maintenance';
   var NOWPLAYING_ENDPOINT='https://admin.vmradio.fr/api/public/radio/nowplaying';
-  var DIRECT_STREAM='https://radio.vmradio.fr/listen/vm_radio/radio.mp3';
   var POLL_MS=250;
 
-  var requested=false;
   var active=false;
   var busy=false;
   var overlay=null;
-  var wantedPlayback=false;
-  var lastSyncedMode='';
-  var lastStateKnown=false;
 
   function blockEvent(event){
     if(!active)return;
@@ -31,57 +26,6 @@
 
   function getAudio(){
     return window.VMRadioPlayer?.audio || document.getElementById('audio') || document.querySelector('audio');
-  }
-
-  function playbackWanted(){
-    var audio=getAudio();
-    if(audio&&!audio.paused&&!audio.ended)return true;
-    try{return localStorage.getItem('vmradio-audio-wanted')==='1';}catch(_){return false;}
-  }
-
-  function rememberWanted(value){
-    wantedPlayback=value===true;
-    try{localStorage.setItem('vmradio-audio-wanted',wantedPlayback?'1':'0');}catch(_){}
-  }
-
-  function ensurePlaying(){
-    if(!wantedPlayback)return;
-    var audio=getAudio();
-    if(!audio||(!audio.paused&&!audio.ended))return;
-    try{
-      audio.autoplay=true;
-      var p=audio.play();
-      if(p&&typeof p.catch==='function')p.catch(function(){});
-    }catch(_){}
-  }
-
-  function syncToLiveEdge(mode){
-    var audio=getAudio();
-    if(!audio)return false;
-
-    if(!wantedPlayback)wantedPlayback=playbackWanted();
-    if(lastSyncedMode===mode){
-      ensurePlaying();
-      return true;
-    }
-
-    lastSyncedMode=mode;
-
-    try{
-      audio.autoplay=wantedPlayback;
-      audio.src=DIRECT_STREAM+'?vm_live_sync='+Date.now();
-      audio.load();
-      if(window.VMRadioPlayer)window.VMRadioPlayer.stream=DIRECT_STREAM;
-      if(wantedPlayback){
-        var p=audio.play();
-        if(p&&typeof p.catch==='function')p.catch(function(){});
-      }
-      setTimeout(ensurePlaying,120);
-      setTimeout(ensurePlaying,450);
-      return true;
-    }catch(_){
-      return false;
-    }
   }
 
   function ensureOverlay(){
@@ -102,9 +46,17 @@
       listen.addEventListener('click',function(event){
         event.preventDefault();
         event.stopPropagation();
-        rememberWanted(true);
-        syncToLiveEdge(active?'maintenance':'rotation');
-        ensurePlaying();
+        try{
+          if(window.VMRadioPlayer&&typeof window.VMRadioPlayer.play==='function'){
+            window.VMRadioPlayer.play();
+            return;
+          }
+          var audio=getAudio();
+          if(audio){
+            var p=audio.play();
+            if(p&&typeof p.catch==='function')p.catch(function(){});
+          }
+        }catch(_){}
       });
     }
 
@@ -117,7 +69,6 @@
     document.documentElement.style.setProperty('overflow','hidden','important');
     if(document.body)document.body.style.setProperty('overflow','hidden','important');
     ensureOverlay();
-    ensurePlaying();
   }
 
   function hideMaintenance(){
@@ -129,13 +80,12 @@
   }
 
   function radioMode(data){
-    var raw=String(
+    return String(
       data?.raw?.engine?.current?.type ||
       data?.now_playing?.playlist ||
       data?.playlist ||
       ''
     ).trim().toLowerCase();
-    return raw;
   }
 
   async function getJson(url){
@@ -154,42 +104,36 @@
     if(busy)return;
     busy=true;
     try{
-      var state=await getJson(STATE_ENDPOINT);
-      var nextRequested=state.app===true;
+      /*
+       * Les deux états sont lus en parallèle pour supprimer le décalage réseau.
+       * Le Manager ne publie app=true qu'après confirmation audio_ready du VPS.
+       */
+      var values=await Promise.all([
+        getJson(STATE_ENDPOINT),
+        getJson(NOWPLAYING_ENDPOINT)
+      ]);
 
-      if(!lastStateKnown){
-        requested=nextRequested;
-        lastStateKnown=true;
-        if(requested)rememberWanted(playbackWanted());
-      }else if(nextRequested!==requested){
-        requested=nextRequested;
-        if(requested){
-          rememberWanted(playbackWanted());
-          lastSyncedMode='';
-        }
-      }
-
-      var now=await getJson(NOWPLAYING_ENDPOINT);
+      var state=values[0];
+      var now=values[1];
+      var requested=state.app===true;
       var mode=radioMode(now);
       var radioMaintenance=mode==='maintenance'||mode.indexOf('maintenance')!==-1;
 
-      if(requested){
-        /* Le popup n'apparaît qu'une fois le jingle réellement démarré côté moteur. */
-        if(radioMaintenance){
-          syncToLiveEdge('maintenance');
-          showMaintenance();
-        }else{
-          hideMaintenance();
-        }
-      }else{
-        /* À la remise en ligne, on garde le popup tant que la rotation n'a pas réellement repris. */
-        if(radioMaintenance){
-          if(active)showMaintenance();
-        }else{
-          if(active||lastSyncedMode==='maintenance')syncToLiveEdge('rotation');
-          hideMaintenance();
-        }
+      if(requested&&radioMaintenance){
+        showMaintenance();
+        return;
       }
+
+      if(!requested&&!radioMaintenance){
+        hideMaintenance();
+        return;
+      }
+
+      /*
+       * Pendant les quelques millisecondes d'un changement d'état,
+       * on conserve l'affichage actuel au lieu d'anticiper l'antenne.
+       */
+      if(active)ensureOverlay();
     }catch(_){}
     finally{busy=false;}
   }
@@ -197,12 +141,7 @@
   function start(){
     check();
     setInterval(check,POLL_MS);
-    setInterval(function(){
-      if(active){
-        ensureOverlay();
-        ensurePlaying();
-      }
-    },500);
+    setInterval(function(){if(active)ensureOverlay();},1000);
   }
 
   if(document.readyState==='loading'){
