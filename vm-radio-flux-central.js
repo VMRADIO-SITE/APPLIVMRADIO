@@ -97,7 +97,7 @@
   window.addEventListener('pageshow',function(){setTimeout(forceManagerTheme,0);});
 
   var core=document.createElement('script');
-  core.src='vm-radio-flux-central-core.js?v=20260906-metadata-v14';
+  core.src='vm-radio-flux-central-core.js?v=20260907-cover-preload-v15';
   core.async=false;
   document.head.appendChild(core);
 
