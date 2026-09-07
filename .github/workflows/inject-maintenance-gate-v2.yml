@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'maintenance-gate-v2.js'
+      - 'vm-radio-flux-central.js'
       - '.github/workflows/inject-maintenance-gate-v2.yml'
 
 permissions:
@@ -18,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Inject blocking maintenance script
+      - name: Inject maintenance scripts
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -27,11 +28,9 @@ jobs:
           p = Path('index.html')
           s = p.read_text()
 
-          gate_tag = '<script src="maintenance-gate-v2.js?v=20260907-maintenance-audio-v4"></script>'
-          flux_tag = '<script src="vm-radio-flux-central.js?v=20260907-maintenance-audio-v4"></script>'
+          gate_tag = '<script src="maintenance-gate-v2.js?v=20260907-maintenance-live-sync-v5"></script>'
+          flux_tag = '<script src="vm-radio-flux-central.js?v=20260907-maintenance-live-sync-v5"></script>'
 
-          # Force un nouvel URL de script afin qu'une PWA ouverte ne conserve pas
-          # l'ancienne version qui mettait encore le lecteur audio en pause.
           if re.search(r'<script src="maintenance-gate-v2\.js\?v=[^"]+"></script>', s):
               s = re.sub(
                   r'<script src="maintenance-gate-v2\.js\?v=[^"]+"></script>',
@@ -66,10 +65,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Force fresh maintenance audio scripts"
+          git commit -m "Force instant maintenance live sync scripts"
 
-          # D'autres workflows VM RADIO peuvent pousser sur main au même moment.
-          # On se remet à jour puis on réessaie au lieu d'abandonner le cache-bust.
           for attempt in 1 2 3 4; do
             if git pull --rebase origin main && git push origin main; then
               exit 0
