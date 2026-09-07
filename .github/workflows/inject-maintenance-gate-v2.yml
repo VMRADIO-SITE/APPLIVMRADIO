@@ -28,8 +28,8 @@ jobs:
           p = Path('index.html')
           s = p.read_text()
 
-          gate_tag = '<script src="maintenance-gate-v2.js?v=20260907-maintenance-live-sync-v5"></script>'
-          flux_tag = '<script src="vm-radio-flux-central.js?v=20260907-maintenance-live-sync-v5"></script>'
+          gate_tag = '<script src="maintenance-gate-v2.js?v=20260907-maintenance-vps-direct-v6"></script>'
+          flux_tag = '<script src="vm-radio-flux-central.js?v=20260907-maintenance-vps-direct-v6"></script>'
 
           if re.search(r'<script src="maintenance-gate-v2\.js\?v=[^"]+"></script>', s):
               s = re.sub(
@@ -65,7 +65,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Force instant maintenance live sync scripts"
+          git commit -m "Use VPS direct MP3 maintenance sync"
 
           for attempt in 1 2 3 4; do
             if git pull --rebase origin main && git push origin main; then
