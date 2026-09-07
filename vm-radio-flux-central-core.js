@@ -1,4 +1,4 @@
-/* VM RADIO — source unique moteur + HLS natif v15 */
+/* VM RADIO — source unique moteur + HLS natif v16 */
 (function(){
 'use strict';
 
@@ -6,10 +6,11 @@ const ENGINE='https://admin.vmradio.fr/api/public/radio/nowplaying';
 const MP3_STREAM='https://radio.vmradio.fr/listen/vm_radio/radio.mp3';
 const HLS_STREAM='https://app.vmradio.fr/hls-live/live.m3u8';
 const DEFAULT_ARTIST='Music IA By Valentin';
+const JINGLE_FALLBACK='VM-RADIO-POPUP-LOGO.jpeg';
 const REFRESH=1000;
 
-if(window.__VMRADIO_CENTRAL_HLS_V15__)return;
-window.__VMRADIO_CENTRAL_HLS_V15__=true;
+if(window.__VMRADIO_CENTRAL_HLS_V16__)return;
+window.__VMRADIO_CENTRAL_HLS_V16__=true;
 
 const nativeFetch=window.fetch.bind(window);
 const liveAudio=document.getElementById('audio') || document.createElement('audio');
@@ -26,7 +27,8 @@ console.info('[VM RADIO] Flux actif :',VM_HLS_NATIVE?'HLS AAC':'MP3 secours',STR
 const first=(...v)=>v.find(x=>x!==undefined&&x!==null&&String(x).trim()!=='')??'';
 const cap=v=>{const s=String(v??'').trim();return s?s.charAt(0).toLocaleUpperCase('fr-FR')+s.slice(1):''};
 const clock=v=>{if(!v)return'--:--';const d=typeof v==='number'?new Date(v*1000):new Date(v);return Number.isNaN(d.getTime())?'--:--':d.toLocaleTimeString('fr-FR',{timeZone:'Europe/Paris',hour:'2-digit',minute:'2-digit'})};
-function track(song,meta){if(!song||typeof song!=='object')return null;const title=first(song.title,song.name);if(!title)return null;const playlist=String(meta?.playlist||'').toLowerCase();const requester=String(first(song.requester,song.requester_name,song.requested_by,song.listener_name,meta?.requester,meta?.requester_name,meta?.requested_by,meta?.listener_name,meta?.request?.requester)||'').trim().slice(0,60);const message=String(first(song.message,song.request_message,song.requestMessage,song.listener_message,meta?.message,meta?.request_message,meta?.requestMessage,meta?.listener_message,meta?.request?.message)||'').trim().slice(0,180);return{id:String(first(song.id,song.track_id,title)),title:cap(title),artist:String(first(song.artist,song.artist_name)||DEFAULT_ARTIST).trim(),cover:String(first(song.art,song.cover,song.cover_url,song.artwork,song.artwork_url)||''),time:first(meta?.played_at,meta?.started_at,meta?.time),duration:Number(first(meta?.duration,song?.duration,0))||0,type:meta?.is_request===true?'request':playlist.includes('jingle')?'jingle':'music',requester,message}}
+function artworkFromFile(value){const name=String(value||'').replace(/\\/g,'/').split('/').pop().trim();if(!name)return'';const stem=name.replace(/\.[^.]+$/,'');return stem?'https://radio.vmradio.fr/artwork/'+encodeURIComponent(stem)+'.jpg':''}
+function track(song,meta){if(!song||typeof song!=='object')return null;const title=first(song.title,song.name);if(!title)return null;const playlist=String(meta?.playlist||'').toLowerCase();const requester=String(first(song.requester,song.requester_name,song.requested_by,song.listener_name,meta?.requester,meta?.requester_name,meta?.requested_by,meta?.listener_name,meta?.request?.requester)||'').trim().slice(0,60);const message=String(first(song.message,song.request_message,song.requestMessage,song.listener_message,meta?.message,meta?.request_message,meta?.requestMessage,meta?.listener_message,meta?.request?.message)||'').trim().slice(0,180);const rawType=String(first(meta?.type,meta?.kind,song?.type,song?.kind)||'').toLowerCase();const file=String(first(song.file,song.filename,song.path,meta?.file,meta?.filename,meta?.path,meta?.track?.file)||'').trim();const isJingle=rawType.includes('jingle')||playlist.includes('jingle')||String(title).toLowerCase().includes('jingle')||String(first(song.artist,song.artist_name)||'').toLowerCase().includes('vm radio');const type=meta?.is_request===true?'request':isJingle?'jingle':'music';const cover=String(first(song.art,song.cover,song.cover_url,song.artwork,song.artwork_url,artworkFromFile(file),type==='jingle'?JINGLE_FALLBACK:'')||'');return{id:String(first(song.id,song.track_id,title)),title:cap(title),artist:String(first(song.artist,song.artist_name)||(type==='jingle'?'VM RADIO':DEFAULT_ARTIST)).trim(),cover,time:first(meta?.played_at,meta?.started_at,meta?.time),duration:Number(first(meta?.duration,song?.duration,0))||0,type,requester,message,file}}
 async function getEngineRaw(){const r=await nativeFetch(ENGINE+'?_='+Date.now(),{cache:'no-store',credentials:'omit'});if(!r.ok)throw new Error('VM RADIO API '+r.status);const ct=String(r.headers.get('content-type')||'');if(!ct.includes('application/json'))throw new Error('VM RADIO API réponse invalide');return r.json()}
 function setText(sel,value){const v=String(value??'');document.querySelectorAll(sel).forEach(el=>{if(el.textContent!==v)el.textContent=v})}
 
@@ -46,14 +48,22 @@ function preloadCover(value){
   coverCache.set(v,task);
   return task;
 }
-function setImage(sel,value){
-  if(!value)return;
-  const v=String(value);
+function setImage(sel,value,fallback=''){
+  const v=String(value||fallback||'').trim();
+  if(!v)return;
   preloadCover(v);
   document.querySelectorAll(sel).forEach(el=>{
     if(el.tagName!=='IMG')return;
     el.dataset.vmDesiredCover=v;
+    el.onerror=()=>{
+      const fb=String(fallback||'').trim();
+      if(!fb||el.dataset.vmFallbackApplied==='1')return;
+      el.dataset.vmFallbackApplied='1';
+      el.dataset.vmDesiredCover=fb;
+      el.setAttribute('src',fb);
+    };
     if((el.getAttribute('src')||'')===v)return;
+    el.dataset.vmFallbackApplied='0';
     el.setAttribute('src',v);
   });
 }
@@ -69,8 +79,8 @@ function render(current,next,history){
   setText('[data-current-title],#currentTitle,#title,#programCurrent,.current-title',current.title);
   setText('[data-current-artist],#currentArtist,#artist,.current-artist,.artist',current.artist);
   setText('[data-current-time],#broadcastTime,.current-time',clock(current.time));
-  setImage('[data-current-cover],#currentCover,#cover,.current-cover,.cover-wrap img',current.cover);
-  if(next){ensureNextTime();const nextAt=nextBroadcastTime(current,next);setText('[data-next-title],#nextTitle,#programNext,.next-title,#nextTrackTitle',next.title);setText('[data-next-artist],#nextArtist,.next-artist,#nextTrackArtist',next.artist);setText('[data-next-time],#nextTime,.next-time',clock(nextAt));setImage('[data-next-cover],#nextCover,.next-cover,.next-card img,#nextTrackCover',next.cover)}
+  setImage('[data-current-cover],#currentCover,#cover,.current-cover,.cover-wrap img',current.cover,current?.type==='jingle'?JINGLE_FALLBACK:'');
+  if(next){ensureNextTime();const nextAt=nextBroadcastTime(current,next);setText('[data-next-title],#nextTitle,#programNext,.next-title,#nextTrackTitle',next.title);setText('[data-next-artist],#nextArtist,.next-artist,#nextTrackArtist',next.artist);setText('[data-next-time],#nextTime,.next-time',clock(nextAt));setImage('[data-next-cover],#nextCover,.next-cover,.next-card img,#nextTrackCover',next.cover,next?.type==='jingle'?JINGLE_FALLBACK:'')}
   renderRequester('current',current);renderRequester('next',next);
   const previous=(history||[]).filter(x=>x&&x.id!==current.id&&x.type==='music').slice(0,3);const last=previous[0];
   if(last){setText('[data-news-last],#previousTitle,#programPrevious',last.title);setText('[data-news-last-artist],#previousArtist',last.artist);setText('[data-news-last-time]',clock(last.time));setImage('[data-news-last-cover],#previousCover',last.cover)}
