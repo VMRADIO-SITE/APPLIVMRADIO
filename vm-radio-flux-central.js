@@ -96,9 +96,41 @@
   document.addEventListener('click',function(){setTimeout(forceManagerTheme,0);setTimeout(forceManagerTheme,250);},true);
   window.addEventListener('pageshow',function(){setTimeout(forceManagerTheme,0);});
 
+  var DIRECT_MP3='https://radio.vmradio.fr/listen/vm_radio/radio.mp3';
   var core=document.createElement('script');
   core.src='vm-radio-flux-central-core.js?v=20260907-background-nowplaying-v17';
   core.async=false;
+  core.onload=function(){
+    /*
+     * Le lecteur reste sur UNE source MP3 directe du VPS pendant toute la session.
+     * Les changements rotation/maintenance se font uniquement dans le moteur radio.
+     * Aucun changement de src ne doit être fait lors de la maintenance.
+     */
+    var audio=window.VMRadioPlayer?.audio||document.getElementById('audio')||document.querySelector('audio');
+    if(!audio)return;
+
+    var current=String(audio.currentSrc||audio.getAttribute('src')||'');
+    if(current.indexOf('/listen/vm_radio/radio.mp3')===-1){
+      var wasPlaying=!audio.paused&&!audio.ended;
+      try{
+        audio.src=DIRECT_MP3;
+        audio.load();
+        if(wasPlaying){
+          var p=audio.play();
+          if(p&&typeof p.catch==='function')p.catch(function(){});
+        }
+      }catch(_){}
+    }
+
+    window.__VMRADIO_STREAM_URL__=DIRECT_MP3;
+    window.__VMRADIO_HLS_NATIVE__=false;
+    if(window.VMRadioPlayer){
+      window.VMRadioPlayer.stream=DIRECT_MP3;
+      window.VMRadioPlayer.isHls=false;
+    }
+
+    console.info('[VM RADIO] Flux permanent : MP3 direct VPS',DIRECT_MP3);
+  };
   document.head.appendChild(core);
 
   var presence=document.createElement('script');
